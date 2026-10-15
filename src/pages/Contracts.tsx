@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { supabase } from '../lib/supabase';
 import { useApp } from '../lib/session';
+import { DateField, Select } from '../components/pickers';
 import { Field, Icon, LoadingList, OwnerNav, Segmented, Sheet } from '../components/ui';
 import { getClients, type Client } from '../lib/data';
 import { addDays, isoDate, money, toCents } from '../lib/format';
@@ -102,7 +103,7 @@ function ContractForm({ clients, onClose, onSaved }: { clients: Client[]; onClos
     <Sheet title={t('ct.new')} onClose={onClose}>
       <form className="stack" style={{ gap: 14 }} onSubmit={save}>
         <Field label={t('job.client')}>
-          <select className="select" value={clientId} onChange={(e) => setClientId(e.target.value)}>{clients.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}</select>
+          <Select value={clientId} onChange={(v) => setClientId(v)} label={t('job.client')}>{clients.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}</Select>
         </Field>
         <Segmented value={status} onChange={setStatus} label={t('ct.status')} options={[{ value: 'active', label: t('ct.st.active') }, { value: 'proposal', label: t('ct.st.proposal') }]} />
         <div className="grid2">
@@ -110,8 +111,8 @@ function ContractForm({ clients, onClose, onSaved }: { clients: Client[]; onClos
           <Field label={t('ct.hours')}><input className="input" inputMode="decimal" value={hours} onChange={(e) => setHours(e.target.value)} /></Field>
         </div>
         <div className="grid2">
-          <Field label={t('ct.start')}><input className="input" type="date" value={start} onChange={(e) => setStart(e.target.value)} /></Field>
-          <Field label={t('ct.renews')}><input className="input" type="date" value={renew} onChange={(e) => setRenew(e.target.value)} /></Field>
+          <Field label={t('ct.start')}><DateField label={t('ct.start')} value={start} onChange={setStart} /></Field>
+          <Field label={t('ct.renews')}><DateField label={t('ct.renews')} value={renew} onChange={setRenew} /></Field>
         </div>
         <Field label={t('ct.radius')} hint={t('ct.radiusHint')}><input className="input" inputMode="numeric" value={radius} onChange={(e) => setRadius(e.target.value)} /></Field>
         {error && <p className="error-text" role="alert">{error}</p>}

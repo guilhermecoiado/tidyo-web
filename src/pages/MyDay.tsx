@@ -2,13 +2,14 @@ import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useApp } from '../lib/session';
+import { InstallCard } from '../components/InstallCard';
 import { Confirm, Field, Icon, LoadingList, Logo, Sheet, StatusBadge } from '../components/ui';
 import { Bell } from './Inbox';
 import { cacheGet, cacheSet, perform, useOffline } from '../lib/offline';
 import { compressImage } from '../lib/photos';
 import { PushToggle } from '../components/PushToggle';
 import { navUrl } from './Routes';
-import { fmtHours, hoursBetween, startOfDay, time, toCents, longDay, addDays, isoDate } from '../lib/format';
+import { fmtHours, hoursBetween, startOfDay, time, toCents, longDay, shortDay, addDays, isoDate } from '../lib/format';
 
 type HJob = {
   job_id: string; company_id: string; status: string; scheduled_start: string; scheduled_end: string; client_notes: string | null;
@@ -18,7 +19,7 @@ type HJob = {
 type Entry = { id: string; clock_in: string; clock_out: string | null };
 
 export default function MyDay() {
-  const { t, tErr, lang, membership, isStaff, toast } = useApp();
+  const { t, tg, tErr, lang, membership, isStaff, toast } = useApp();
   const [jobs, setJobs] = useState<HJob[] | null>(null);
   const [entries, setEntries] = useState<Entry[]>([]);
   const [finish, setFinish] = useState<HJob | null>(null);
@@ -109,16 +110,17 @@ export default function MyDay() {
       <main className="page no-nav">
         <div className="topbar">
           <Logo size={38} />
-          <div className="grow">
-            <div className="small muted bold">{longDay(new Date(), lang)}</div>
-            <h1 style={{ fontSize: 21 }}>{t('day.title')}</h1>
+          <div className="grow home-hello">
+            <div className="small muted bold one-line">{shortDay(new Date(), lang)}</div>
+            <h1 className="one-line">{t('day.title')}</h1>
           </div>
           <Bell />
           {isStaff
-            ? <Link className="btn btn-secondary" style={{ minHeight: 44 }} to="/app">{t('nav.today')}</Link>
+            ? <Link className="btn btn-secondary btn-sm" to="/app">{t('nav.today')}</Link>
             : <button className="icon-btn" aria-label={t('auth.signout')} onClick={() => setAskOut(true)}><Icon name="logout" size={18} /></button>}
         </div>
 
+        <InstallCard />
         {(!online || pending > 0) && (
           <div className="strip" role="status" style={online ? { background: 'var(--warn-bg)', borderColor: '#F3DDB8', color: 'var(--warn-fg)' } : undefined}>
             <span style={{ width: 8, height: 8, borderRadius: 8, background: 'currentColor', flex: 'none' }} />
@@ -160,7 +162,7 @@ export default function MyDay() {
             <Icon name="route" size={18} />{t('rt.openFull')}
           </a>
         )}
-        <Link className="btn btn-secondary" to="/mensagens"><Icon name="chat" size={18} />{t('ch.talkOwner')}</Link>
+        <Link className="btn btn-secondary" to="/mensagens"><Icon name="chat" size={18} />{tg('ch.talkOwner')}</Link>
         <button className="btn btn-secondary" onClick={() => setExpense(true)}><Icon name="receipt" size={18} />{t('day.expense')}</button>
         <PushToggle />
         <Link className="btn btn-ghost" to="/ajuda"><Icon name="help" size={18} />{t('more.help')}</Link>
@@ -168,7 +170,7 @@ export default function MyDay() {
 
       {finish && (
         <Sheet title={t('day.finish')} onClose={() => setFinish(null)}>
-          <Field label={t('day.finishNote')}><textarea className="textarea" value={note} onChange={(e) => setNote(e.target.value)} /></Field>
+          <Field label={tg('day.finishNote')}><textarea className="textarea" value={note} onChange={(e) => setNote(e.target.value)} /></Field>
           <button className="btn btn-primary" onClick={async () => { const j = finish; setFinish(null); await progress(j, 'completed', note); }}>{t('c.confirm')}</button>
         </Sheet>
       )}
@@ -181,7 +183,7 @@ export default function MyDay() {
 }
 
 function ExpenseForm({ companyId, membershipId, onClose }: { companyId: string; membershipId: string; onClose: () => void }) {
-  const { t, tErr, toast, session } = useApp();
+  const { t, tg, tErr, toast, session } = useApp();
   const [cat, setCat] = useState('gas');
   const [amount, setAmount] = useState('');
   const [desc, setDesc] = useState('');
@@ -218,13 +220,13 @@ function ExpenseForm({ companyId, membershipId, onClose }: { companyId: string; 
 }
 
 function ProblemForm({ job, membershipId, onClose }: { job: HJob; membershipId: string; onClose: () => void }) {
-  const { t, tErr, toast } = useApp();
+  const { t, tg, tErr, toast } = useApp();
   const [cat, setCat] = useState('no_access');
   const [desc, setDesc] = useState('');
   const save = async (e: FormEvent) => {
     e.preventDefault();
     const r = await perform({ kind: 'insert', table: 'job_issues', row: { id: crypto.randomUUID(), job_id: job.job_id, company_id: job.company_id, reported_by: membershipId, category: cat, description: desc || t(`day.${cat === 'no_access' ? 'noAccess' : cat === 'damage' ? 'damage' : cat === 'supplies' ? 'supplies' : 'otherIssue'}`) } });
-    if (r.error) toast(tErr(r.error)); else { toast(r.queued ? t('off.saved') : t('day.problemSent')); onClose(); }
+    if (r.error) toast(tErr(r.error)); else { toast(r.queued ? t('off.saved') : tg('day.problemSent')); onClose(); }
   };
   return (
     <Sheet title={t('day.problem')} onClose={onClose}>

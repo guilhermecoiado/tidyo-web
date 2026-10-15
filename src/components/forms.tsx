@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { supabase } from '../lib/supabase';
 import { useApp } from '../lib/session';
+import { DateField, TimeField, Select } from './pickers';
 import { Confirm, Field, Icon, Segmented, Sheet, StatusBadge } from './ui';
 import { createInvoice, getClientJobs, getJobs, findConflicts, type Client, type Job, type Member, type Invoice } from '../lib/data';
 import { addDays, isoDate, money, time, dayLabel, toCents, randomToken, sha256Hex } from '../lib/format';
@@ -90,39 +91,39 @@ export function JobForm({ clients, members, onClose, onSaved, defaultDate }: {
     <Sheet title={t('home.newJob')} onClose={onClose}>
       <form className="stack" style={{ gap: 14 }} onSubmit={(e: FormEvent) => { e.preventDefault(); save(); }}>
         <Field label={t('job.client')}>
-          <select className="select" value={clientId} onChange={(e) => setClientId(e.target.value)}>
+          <Select value={clientId} onChange={(v) => setClientId(v)} label={t('job.client')}>
             {clients.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-          </select>
+          </Select>
         </Field>
         {client && client.properties.length > 1 && (
           <Field label={t('job.address')}>
-            <select className="select" value={propertyId} onChange={(e) => setPropertyId(e.target.value)}>
+            <Select value={propertyId} onChange={(v) => setPropertyId(v)} label={t('job.address')}>
               {client.properties.map((p) => <option key={p.id} value={p.id}>{p.label} · {p.address_line1}</option>)}
-            </select>
+            </Select>
           </Field>
         )}
         <div className="grid2">
-          <Field label={t('job.date')}><input className="input" type="date" value={date} onChange={(e) => setDate(e.target.value)} required /></Field>
-          <Field label={t('job.start')}><input className="input" type="time" value={start} onChange={(e) => setStart(e.target.value)} required /></Field>
+          <Field label={t('job.date')}><DateField label={t('job.date')} value={date} onChange={setDate} /></Field>
+          <Field label={t('job.start')}><TimeField label={t('job.start')} value={start} onChange={setStart} /></Field>
         </div>
         <div className="grid2">
           <Field label={t('job.duration')}>
-            <select className="select" value={duration} onChange={(e) => setDuration(e.target.value)}>
+            <Select value={duration} onChange={(v) => setDuration(v)} label={t('job.duration')}>
               {[60, 90, 120, 150, 180, 240, 300, 360, 480].map((m) => <option key={m} value={m}>{Math.floor(m / 60)}h{m % 60 ? String(m % 60).padStart(2, '0') : ''}</option>)}
-            </select>
+            </Select>
           </Field>
           <Field label={t('job.price')}><input className="input" inputMode="decimal" value={price} onChange={(e) => setPrice(e.target.value)} placeholder="180" /></Field>
         </div>
         <Field label={t('job.helper')}>
-          <select className="select" value={helper} onChange={(e) => setHelper(e.target.value)}>
+          <Select value={helper} onChange={(v) => setHelper(v)} label={t('job.helper')}>
             <option value="">{t('c.unassigned')}</option>
             {helpers.map((m) => <option key={m.id} value={m.id}>{m.display_name}</option>)}
-          </select>
+          </Select>
         </Field>
         <div className="stack">
           <span className="label">{t('job.repeat')}</span>
           <Segmented value={repeat} onChange={setRepeat} label={t('job.repeat')} options={[
-            { value: 'once', label: t('job.once') }, { value: 'weekly', label: '1×/sem' }, { value: 'biweekly', label: '2 sem' }, { value: 'monthly', label: '4 sem' },
+            { value: 'once', label: t('rep.once') }, { value: 'weekly', label: t('rep.weekly') }, { value: 'biweekly', label: t('rep.biweekly') }, { value: 'monthly', label: t('rep.monthly') },
           ]} />
           {repeat !== 'once' && <span className="hint">{t(`job.${repeat}`)} · {t('job.repeatHint')}</span>}
         </div>
@@ -211,10 +212,10 @@ export function JobDetail({ job, members, onClose, onChanged }: { job: Job; memb
       {items && items.length > 0 && <details className="card"><summary className="bold" style={{ cursor: 'pointer', minHeight: 32 }}>{t('ck.progress', { done: items.filter((i) => i.done_at).length, total: items.length })}</summary><div style={{ marginTop: 10 }}><ChecklistView items={items} editable={false} /></div></details>}
       {job.status === 'scheduled' && (
         <Field label={t('job.helper')}>
-          <select className="select" value={helper} onChange={(e) => reassign(e.target.value)}>
+          <Select value={helper} onChange={(v) => reassign(v)} label={t('job.helper')}>
             <option value="">{t('c.unassigned')}</option>
             {members.filter((m) => m.status === 'active').map((m) => <option key={m.id} value={m.id}>{m.display_name}</option>)}
-          </select>
+          </Select>
         </Field>
       )}
       <div className="stack">
@@ -272,9 +273,9 @@ export function ClientForm({ onClose, onSaved }: { onClose: () => void; onSaved:
           <Field label={t('cl.phone')}><input className="input" type="tel" value={f.phone} onChange={up('phone')} /></Field>
         </div>
         <Field label={t('cl.lang')}>
-          <select className="select" value={f.language} onChange={up('language')}>
+          <Select value={f.language} onChange={(v) => setF({ ...f, language: v as Lang })} label={t('cl.lang')}>
             {(['en', 'es', 'pt-BR'] as Lang[]).map((l) => <option key={l} value={l}>{LANG_LABEL[l]}</option>)}
-          </select>
+          </Select>
         </Field>
         <label className="check"><input type="checkbox" checked={f.no_translate} onChange={(e) => setF({ ...f, no_translate: e.target.checked })} />{t('cl.noTranslate')}</label>
         <Field label={t('cl.street')}><input className="input" value={f.street} onChange={up('street')} autoComplete="street-address" required /></Field>
@@ -322,20 +323,24 @@ export function ClientDetail({ client, onClose }: { client: Client; onClose: () 
   };
   return (
     <Sheet title={client.name} onClose={onClose}>
-      <div className="row wrap small muted">
+      <div className="meta-row">
         <span className="badge b-neutral">{client.kind === 'commercial' ? t('cl.com') : t('cl.res')}</span>
-        {client.email && <a href={`mailto:${client.email}`}>{client.email}</a>}
-        {client.phone && <a href={`tel:${client.phone}`}>{client.phone}</a>}
-        <span>{LANG_LABEL[client.language as Lang]}{client.no_translate ? ` · ${t('cl.noTranslate').split(' (')[0]}` : ''}</span>
+        <span className="badge b-neutral">{LANG_LABEL[client.language as Lang]}{client.no_translate ? ` · ${t('cl.noTranslate').split(' (')[0]}` : ''}</span>
       </div>
+      {(client.email || client.phone) && (
+        <div className="contact-list">
+          {client.email && <a href={`mailto:${client.email}`}><Icon name="mail" size={16} /><span>{client.email}</span></a>}
+          {client.phone && <a href={`tel:${client.phone}`}><Icon name="phone" size={16} /><span>{client.phone}</span></a>}
+        </div>
+      )}
       {p && (
         <div className="card stack" style={{ gap: 6 }}>
-          <div className="row"><Icon name="pin" size={18} /><b>{p.address_line1}, {p.city} {p.state} {p.zip}</b></div>
+          <div className="addr"><Icon name="pin" size={18} /><b>{p.address_line1}<br /><span className="small muted">{p.city}{p.state ? `, ${p.state}` : ''} {p.zip}</span></b></div>
           {p.access_instructions && <div className="small"><b>{t('day.access')}:</b> {p.access_instructions}</div>}
           {p.pets && <div className="small"><b>{t('cl.pets')}:</b> {p.pets}</div>}
           {p.special_instructions && <div className="small"><b>{t('cl.special')}:</b> {p.special_instructions}</div>}
           {hasGeo ? <span className="row small bold" style={{ color: 'var(--ok-fg)' }}><Icon name="check" size={16} />{t('geo.has')}</span>
-            : <><button className="btn btn-ghost" style={{ alignSelf: 'flex-start', paddingLeft: 0 }} onClick={setGeo}><Icon name="pin" size={16} />{t('geo.set')}</button><span className="hint">{t('geo.setHint')}</span></>}
+            : <><button className="btn btn-secondary btn-left" onClick={setGeo}><Icon name="pin" size={16} /><span>{t('geo.set')}</span></button><span className="hint">{t('geo.setHint')}</span></>}
         </div>
       )}
       <div className="stack" style={{ gap: 8 }}>
@@ -344,7 +349,7 @@ export function ClientDetail({ client, onClose }: { client: Client; onClose: () 
           <div className="kpi"><div className="label">{t('cl.revenue')}</div><div className="value num">{money(profit?.revenue_cents, lang)}</div></div>
           <div className="kpi"><div className="label">{t('cl.labour')}</div><div className="value num">{money(profit?.labour_cents, lang)}</div></div>
           <div className="kpi"><div className="label">{t('cl.expenses')}</div><div className="value num">{money(profit?.expense_cents, lang)}</div></div>
-          <div className="kpi" style={{ background: 'var(--brand-light)' }}><div className="label">Lucro / Profit</div><div className="value num">{money(profit?.profit_cents, lang)}</div></div>
+          <div className="kpi" style={{ background: 'var(--brand-light)' }}><div className="label">{t('cl.profitShort')}</div><div className="value num">{money(profit?.profit_cents, lang)}</div></div>
         </div>
       </div>
       {client.notes && <div className="card tight small"><b>{t('cl.notes')}:</b> {client.notes}</div>}
@@ -401,14 +406,14 @@ export function InvoiceForm({ clients, onClose, onSaved }: { clients: Client[]; 
     <Sheet title={t('inv.new')} onClose={onClose}>
       <form className="stack" style={{ gap: 14 }} onSubmit={save}>
         <Field label={t('job.client')}>
-          <select className="select" value={clientId} onChange={(e) => setClientId(e.target.value)}>
+          <Select value={clientId} onChange={(v) => setClientId(v)} label={t('job.client')}>
             {clients.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-          </select>
+          </Select>
         </Field>
         <Field label={t('inv.description')}><input className="input" value={desc} onChange={(e) => setDesc(e.target.value)} placeholder="Deep clean" /></Field>
         <div className="grid2">
           <Field label={t('inv.amount')}><input className="input" inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} required /></Field>
-          <Field label={t('inv.due')}><input className="input" type="date" value={due} onChange={(e) => setDue(e.target.value)} /></Field>
+          <Field label={t('inv.due')}><DateField label={t('inv.due')} value={due} onChange={setDue} /></Field>
         </div>
         <p className="hint" style={{ margin: 0 }}>{t('inv.stripeSoon')}</p>
         {error && <p className="error-text" role="alert">{error}</p>}
@@ -495,9 +500,9 @@ export function InviteForm({ onClose, onSaved }: { onClose: () => void; onSaved:
             <Segmented value={role} onChange={setRole} label={t('team.role')} options={[{ value: 'helper', label: t('team.helper') }, { value: 'manager', label: t('team.manager') }]} />
           )}
           <Field label={t('more.lang')}>
-            <select className="select" value={mlang} onChange={(e) => setMlang(e.target.value as Lang)}>
+            <Select value={mlang} onChange={(v) => setMlang(v as Lang)} label={t('more.lang')}>
               {(['es', 'pt-BR', 'en'] as Lang[]).map((l) => <option key={l} value={l}>{LANG_LABEL[l]}</option>)}
-            </select>
+            </Select>
           </Field>
           <Field label={`${t('team.rate')} (${t('c.optional')})`}><input className="input" inputMode="decimal" value={rate} onChange={(e) => setRate(e.target.value)} /></Field>
           {error && <p className="error-text" role="alert">{error}</p>}

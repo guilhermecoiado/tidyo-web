@@ -46,12 +46,17 @@ function Root({ publicPage }: { publicPage: 'landing' | 'auth' }) {
   return <Navigate to={isStaff ? '/app' : '/dia'} replace />;
 }
 
+// Finance tabs share one header, so switching between them should not replay the page animation
+const routeKey = (p: string) => (p.startsWith('/app/financas') || p === '/app/cobrancas' ? '/app/financas' : p);
+
 function Routed() {
   const { ready, session, needsMfa, refresh } = useApp();
+  const loc = useLocation();
   if (!ready) return <FullLoader />;
   if (session && needsMfa) return <MfaPrompt onDone={refresh} />;
   return (
-    <Routes>
+    <div className="route-view" key={routeKey(loc.pathname)}>
+    <Routes location={loc}>
       <Route path="/" element={<Root publicPage="landing" />} />
       <Route path="/entrar" element={<Root publicPage="auth" />} />
       <Route path="/nova-senha" element={<NewPassword />} />
@@ -78,6 +83,7 @@ function Routed() {
       <Route path="/app/mais" element={<Gate need="staff"><More /></Gate>} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
+    </div>
   );
 }
 

@@ -1,4 +1,5 @@
-import { useEffect, useId, useRef, type ReactNode } from 'react';
+import { useCallback, useEffect, useId, useRef, useState, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 import { NavLink, useLocation } from 'react-router-dom';
 import { useApp } from '../lib/session';
 
@@ -53,6 +54,9 @@ const P: Record<string, string> = {
   logout: 'M15 4h4v16h-4M10 8l-4 4 4 4M6 12h11',
   share: 'M4 12v8h16v-8M12 3v12M7 8l5-5 5 5',
   building: 'M4 21V5l8-2v18M12 7l8 2v12M8 9h.01M8 13h.01M8 17h.01M16 13h.01M16 17h.01',
+  mail: 'M3 5h18v14H3zM3 6l9 7 9-7',
+  phone: 'M5 3h4l2 5-2.5 1.5a11 11 0 0 0 6 6L16 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 5a2 2 0 0 1 2-2z',
+  download: 'M12 3v12M7 10l5 5 5-5M4 21h16',
 };
 
 export function Icon({ name, size = 22, color = 'currentColor', stroke = 2 }: { name: keyof typeof P | string; size?: number; color?: string; stroke?: number }) {
@@ -67,51 +71,82 @@ export function Sparkle({ size = 16, color = '#5FD4C1' }: { size?: number; color
   return <svg width={size} height={size} viewBox="0 0 24 24" fill={color} aria-hidden="true"><path d="M12 3l1.9 4.6L18.5 9.5l-4.6 1.9L12 16l-1.9-4.6L5.5 9.5l4.6-1.9z" /></svg>;
 }
 
+// Open overlays form a stack: Escape closes only the top one, and the page stays locked until all are closed.
+const stack: { current: () => void }[] = [];
+let escBound = false;
+function bindEsc() {
+  if (escBound) return;
+  escBound = true;
+  window.addEventListener('keydown', (e) => { if (e.key === 'Escape' && stack.length) { e.preventDefault(); stack[stack.length - 1].current(); } });
+}
 function useEscape(onClose: () => void) {
+  const ref = useRef(onClose);
+  ref.current = onClose;
   useEffect(() => {
-    const h = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
-    window.addEventListener('keydown', h);
-    const prev = document.body.style.overflow;
+    bindEsc();
+    const entry = { current: () => ref.current() };
+    stack.push(entry);
     document.body.style.overflow = 'hidden';
-    return () => { window.removeEventListener('keydown', h); document.body.style.overflow = prev; };
-  }, [onClose]);
+    return () => {
+      const i = stack.indexOf(entry);
+      if (i >= 0) stack.splice(i, 1);
+      if (!stack.length) document.body.style.overflow = '';
+    };
+  }, []);
 }
 
-export function Sheet({ title, onClose, children, dark = false }: { title: string; onClose: () => void; children: ReactNode; dark?: boolean }) {
+const reduced = () => typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+// Play the closing animation, then unmount
+function useClosing(onClose: () => void, ms = 190) {
+  const [closing, setClosing] = useState(false);
+  const close = useCallback(() => {
+    if (reduced()) { onClose(); return; }
+    setClosing(true);
+    window.setTimeout(onClose, ms);
+  }, [onClose, ms]);
+  return { closing, close };
+}
+
+export function Sheet({ title, onClose, children, dark = false, className = '' }: { title: string; onClose: () => void; children: ReactNode; dark?: boolean; className?: string }) {
   const { t } = useApp();
   const id = useId();
   const ref = useRef<HTMLDivElement>(null);
-  useEscape(onClose);
-  useEffect(() => { ref.current?.focus(); }, []);
-  return (
-    <div className="scrim" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
-      <div className={`sheet${dark ? ' dark' : ''}`} role="dialog" aria-modal="true" aria-labelledby={id} tabIndex={-1} ref={ref}>
+  const { closing, close } = useClosing(onClose);
+  useEscape(close);
+  useEffect(() => { ref.current?.focus({ preventScroll: true }); }, []);
+  return createPortal(
+    <div className={`scrim${closing ? ' closing' : ''}`} onMouseDown={(e) => { if (e.target === e.currentTarget) close(); }}>
+      <div className={`sheet${dark ? ' dark' : ''} ${className}`} role="dialog" aria-modal="true" aria-labelledby={id} tabIndex={-1} ref={ref}>
         <span className="grabber" />
         <div className="row">
-          <h2 id={id} style={{ flex: 1 }}>{title}</h2>
-          <button className="icon-btn" style={dark ? { background: 'transparent', borderColor: '#23383A' } : undefined} onClick={onClose} aria-label={t('c.close')}>
+          <h2 id={id} style={{ flex: 1, minWidth: 0 }}>{title}</h2>
+          <button className="icon-btn" style={dark ? { background: 'transparent', borderColor: '#23383A' } : undefined} onClick={close} aria-label={t('c.close')}>
             <Icon name="x" size={18} color={dark ? '#EAF5F2' : undefined} />
           </button>
         </div>
         {children}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 
 export function Confirm({ text, confirmLabel, danger, onConfirm, onCancel, busy }: { text: string; confirmLabel: string; danger?: boolean; onConfirm: () => void; onCancel: () => void; busy?: boolean }) {
   const { t } = useApp();
-  useEscape(onCancel);
-  return (
-    <div className="scrim center" onMouseDown={(e) => { if (e.target === e.currentTarget) onCancel(); }}>
+  const { closing, close } = useClosing(onCancel, 150);
+  useEscape(close);
+  return createPortal(
+    <div className={`scrim center${closing ? ' closing' : ''}`} onMouseDown={(e) => { if (e.target === e.currentTarget) close(); }}>
       <div className="dialog" role="alertdialog" aria-modal="true">
         <p style={{ margin: 0, fontWeight: 700, fontSize: 16 }}>{text}</p>
         <div className="grid2">
-          <button className="btn btn-secondary" onClick={onCancel}>{t('c.cancel')}</button>
+          <button className="btn btn-secondary" onClick={close}>{t('c.cancel')}</button>
           <button className={`btn ${danger ? 'btn-danger' : 'btn-primary'}`} style={{ minHeight: 44 }} onClick={onConfirm} disabled={busy}>{confirmLabel}</button>
         </div>
       </div>
     </div>
+,
+    document.body,
   );
 }
 
@@ -184,4 +219,14 @@ export function StatusBadge({ status }: { status: string }) {
   const { t } = useApp();
   const cls = status === 'completed' ? 'b-ok' : status === 'in_progress' ? 'b-warn' : status === 'canceled' || status === 'no_show' ? 'b-danger' : 'b-neutral';
   return <span className={`badge ${cls}`}>{t(`status.${status}`)}</span>;
+}
+
+export function Switch({ checked, onChange, label, hint, disabled }: { checked: boolean; onChange: (v: boolean) => void; label: string; hint?: string; disabled?: boolean }) {
+  const id = useId();
+  return (
+    <div className="switch-row">
+      <span className="grow" id={id}><span className="bold">{label}</span>{hint && <span className="small muted" style={{ display: 'block' }}>{hint}</span>}</span>
+      <button type="button" role="switch" aria-checked={checked} aria-labelledby={id} className="switch" disabled={disabled} onClick={() => onChange(!checked)}><span /></button>
+    </div>
+  );
 }

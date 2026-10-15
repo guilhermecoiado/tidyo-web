@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useApp } from '../lib/session';
+import { InstallCard } from '../components/InstallCard';
 import { Confirm, Field, Icon, LoadingList, Sheet, StatusBadge, Wordmark } from '../components/ui';
 import { ChecklistView, PhotoStrip, Stars } from '../components/proof';
 import { getChecklist, getJobPhotos, type CheckItem, type Photo } from '../lib/photos';
@@ -42,10 +43,11 @@ export default function Portal() {
     <div className="shell">
       <main className="page no-nav">
         <div className="topbar">
-          <div className="grow"><div className="small muted bold">{portal?.company_name}</div><h1 style={{ fontSize: 22 }}>{t('pt.title')}</h1></div>
+          <div className="grow home-hello"><div className="small muted bold one-line">{portal?.company_name}</div><h1 className="one-line">{t('pt.title')}</h1></div>
           <button className="icon-btn" aria-label={t('auth.signout')} onClick={() => setAskOut(true)}><Icon name="logout" size={18} /></button>
         </div>
 
+        <InstallCard />
         {toRate.map((j) => (
           <button key={j.id} className="card row" onClick={() => setOpen(j)} style={{ background: 'var(--brand-light)', borderColor: '#B7E3D6', textAlign: 'left', cursor: 'pointer' }}>
             <span className="grow"><span className="bold">{t('pt.rateTitle')}</span><br /><span className="small muted">{dayLabel(new Date(j.scheduled_start), lang)}</span></span>

@@ -3,8 +3,9 @@ import type { Session } from '@supabase/supabase-js';
 import { supabase } from './supabase';
 import { detectLang, translate, type Lang } from './i18n';
 import { errorKey } from './errors';
+import { gKey, guessGender, type Gender } from './gender';
 
-export type Membership = { id: string; company_id: string; role: 'owner' | 'manager' | 'helper'; status: string; display_name: string; language: Lang };
+export type Membership = { id: string; company_id: string; role: 'owner' | 'manager' | 'helper'; status: string; display_name: string; language: Lang; gender?: 'f' | 'm' | null };
 export type Company = { id: string; name: string; mode: 'residential' | 'commercial' | 'both'; solo: boolean; allow_push_team: boolean; allow_push_clients: boolean; default_language: Lang };
 export type Subscription = { plan: string; status: string; trial_ends_at: string; has_commercial: boolean; commercial_tier: number | null };
 export type PortalClient = { client_id: string; company_id: string; name: string; language: Lang; company_name: string };
@@ -29,6 +30,10 @@ type Ctx = {
   tErr: (message?: string | null) => string;
   refresh: () => Promise<void>;
   toast: (text: string, action?: { label: string; run: () => void }) => void;
+  /** how the business owner is addressed (Dono/Dona); 'u' when unknown */
+  ownerG: Gender;
+  /** translate a gendered key: base = feminine, `.m` masculine, `.u` neutral */
+  tg: (key: string, g?: Gender, params?: Record<string, string | number>) => string;
 };
 
 const SessionCtx = createContext<Ctx>(null as unknown as Ctx);
@@ -44,6 +49,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const [portal, setPortal] = useState<PortalClient | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [needsMfa, setNeedsMfa] = useState(false);
+  const [ownerG, setOwnerG] = useState<Gender>('u');
   const [lang, setLangState] = useState<Lang>(detectLang());
   const [toastState, setToast] = useState<Toast>(null);
   const toastTimer = useRef<number>();
@@ -53,7 +59,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     if (!s) { setProfile(null); setMembership(null); setCompany(null); setSub(null); setPortal(null); setIsAdmin(false); setReady(true); return; }
     const [{ data: p }, { data: ms }] = await Promise.all([
       supabase.from('profiles').select('id, full_name, language').eq('id', s.user.id).maybeSingle(),
-      supabase.from('memberships').select('id, company_id, role, status, display_name, language').eq('user_id', s.user.id).eq('status', 'active'),
+      supabase.from('memberships').select('id, company_id, role, status, display_name, language, gender').eq('user_id', s.user.id).eq('status', 'active'),
     ]);
     setProfile(p as Profile | null);
     const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
@@ -74,9 +80,23 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     } else {
       setCompany(null); setSub(null);
       const { data: pc } = await supabase.rpc('portal_me');
-      setPortal(((pc || []) as PortalClient[])[0] || null);
+      const pcl = ((pc || []) as PortalClient[])[0] || null;
+      setPortal(pcl);
+      if (pcl) supabase.rpc('owner_info', { cid: pcl.company_id }).then(({ data }) => {
+        const o = ((data || []) as { display_name: string; gender: 'f' | 'm' | null }[])[0];
+        if (o) setOwnerG((o.gender as Gender) || guessGender(o.display_name));
+      });
     }
+    const cid = m?.company_id;
+    if (m?.role === 'owner') setOwnerG(m.gender || guessGender(m.display_name || p?.full_name));
+    else setOwnerG('u');
     setReady(true);
+    if (cid && m?.role !== 'owner') {
+      supabase.rpc('owner_info', { cid }).then(({ data }) => {
+        const o = ((data || []) as { display_name: string; gender: 'f' | 'm' | null }[])[0];
+        if (o) setOwnerG((o.gender as Gender) || guessGender(o.display_name));
+      });
+    }
   }, []);
 
   useEffect(() => {
@@ -100,6 +120,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const t = useCallback((key: string, params?: Record<string, string | number>) => translate(lang, key, params), [lang]);
   const tErr = useCallback((message?: string | null) => { const e = errorKey(message); return translate(lang, e.key, e.params); }, [lang]);
 
+  const tg = useCallback((key: string, g?: Gender, params?: Record<string, string | number>) => translate(lang, gKey(key, g ?? ownerG), params), [lang, ownerG]);
+
   const toast = useCallback((text: string, action?: { label: string; run: () => void }) => {
     setToast({ text, action });
     window.clearTimeout(toastTimer.current);
@@ -109,8 +131,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const value = useMemo<Ctx>(() => ({
     ready, session, profile, membership, company, sub, portal, isAdmin, needsMfa, lang,
     isStaff: membership?.role === 'owner' || membership?.role === 'manager',
-    setLang, t, tErr, refresh: async () => { const { data } = await supabase.auth.getSession(); await load(data.session); }, toast,
-  }), [ready, session, profile, membership, company, sub, portal, isAdmin, needsMfa, lang, setLang, t, tErr, load, toast]);
+    setLang, t, tg, ownerG, tErr, refresh: async () => { const { data } = await supabase.auth.getSession(); await load(data.session); }, toast,
+  }), [ready, session, profile, membership, company, sub, portal, isAdmin, needsMfa, lang, setLang, t, tErr, load, toast, tg, ownerG]);
 
   return (
     <SessionCtx.Provider value={value}>

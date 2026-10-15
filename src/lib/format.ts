@@ -34,3 +34,10 @@ export function randomToken(bytes = 24) {
   const a = crypto.getRandomValues(new Uint8Array(bytes));
   return btoa(String.fromCharCode(...a)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }
+
+// Compact date for tight headers: "Quinta, 15 out" · "Thu, Oct 15" · "Jueves, 15 oct"
+export const shortDay = (d: Date, lang: Lang) => {
+  const wd = cap(d.toLocaleDateString(lang, { weekday: lang === 'en' ? 'short' : 'long' }).replace(/-feira$/, '').replace(/\.$/, ''));
+  const md = d.toLocaleDateString(lang, { day: 'numeric', month: 'short' }).replace(/\./g, '').replace(' de ', ' ');
+  return `${wd}, ${md}`;
+};

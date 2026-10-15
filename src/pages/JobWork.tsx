@@ -13,7 +13,7 @@ type HJob = { job_id: string; company_id: string; status: string; scheduled_star
 
 export default function JobWork() {
   const { id = '' } = useParams();
-  const { t, tErr, lang, membership, toast } = useApp();
+  const { t, tg, tErr, lang, membership, toast } = useApp();
   const nav = useNavigate();
   const [job, setJob] = useState<HJob | null>(null);
   const [items, setItems] = useState<CheckItem[] | null>(null);
@@ -108,7 +108,7 @@ export default function JobWork() {
         <section className="card"><PhotoStrip title={t('ck.after')} photos={photos.filter((p) => p.kind === 'after')} onAdd={editable ? (f) => add('after', f) : undefined} busy={busyKind === 'after'} /></section>
         {editable && (
           <>
-            <Field label={t('day.finishNote')}><textarea className="textarea" value={note} onChange={(e) => setNote(e.target.value)} /></Field>
+            <Field label={tg('day.finishNote')}><textarea className="textarea" value={note} onChange={(e) => setNote(e.target.value)} /></Field>
             <button className="btn btn-primary btn-block" disabled={finishing} onClick={() => finish()}>{t('day.finish')}</button>
           </>
         )}

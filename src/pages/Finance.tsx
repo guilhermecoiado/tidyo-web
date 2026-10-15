@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react
 import { NavLink } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useApp } from '../lib/session';
+import { DateField, Select } from '../components/pickers';
 import { Confirm, Field, Icon, LoadingList, OwnerNav, Segmented, Sheet } from '../components/ui';
 import { getClients, getMembers, type Client, type Member } from '../lib/data';
 import { addDays, fmtHours, hoursBetween, isoDate, money, startOfDay, toCents } from '../lib/format';
@@ -92,6 +93,7 @@ export function FinanceOverview() {
   const net = data ? data.received - data.expenses - data.labour : 0;
   const margin = data && data.received > 0 ? net / data.received : 0;
   // Health 0–100: margin, overdue share and how much was collected
+  const noData = !!data && data.received === 0 && data.billed === 0 && data.open === 0 && data.expenses === 0 && data.labour === 0;
   const health = useMemo(() => {
     if (!data) return 0;
     const m = Math.max(0, Math.min(1, margin / 0.35));
@@ -119,12 +121,12 @@ export function FinanceOverview() {
               <svg width="76" height="76" viewBox="0 0 40 40" aria-hidden="true">
                 <circle cx="20" cy="20" r="16" fill="none" stroke="var(--line)" strokeWidth="5" />
                 <circle cx="20" cy="20" r="16" fill="none" stroke={health >= 70 ? 'var(--action)' : health >= 45 ? '#C98A12' : 'var(--danger-strong)'} strokeWidth="5" strokeLinecap="round"
-                  strokeDasharray={`${(health / 100) * 100.5} 100.5`} transform="rotate(-90 20 20)" />
-                <text x="20" y="24" textAnchor="middle" fontSize="11" fontWeight="800" fill="var(--ink)">{health}</text>
+                  strokeDasharray={`${noData ? 0 : (health / 100) * 100.5} 100.5`} transform="rotate(-90 20 20)" className="ring-anim" />
+                <text x="20" y="24" textAnchor="middle" fontSize="11" fontWeight="800" fill={noData ? 'var(--ink-muted)' : 'var(--ink)'}>{noData ? '–' : health}</text>
               </svg>
               <div className="grow stack" style={{ gap: 4 }}>
                 <span className="bold">{t('fin.health')}</span>
-                <span className="small muted">{data.overdue > 0 ? t('fin.tipOverdue', { amount: money(data.overdue, lang) }) : margin < 0.2 && data.received > 0 ? t('fin.tipMargin') : t('fin.tipGood')}</span>
+                <span className="small muted">{noData ? t('fin.tipNoData') : data.overdue > 0 ? t('fin.tipOverdue', { amount: money(data.overdue, lang) }) : margin < 0.2 && data.received > 0 ? t('fin.tipMargin') : health >= 70 ? t('fin.tipGood') : t('fin.tipOk')}</span>
               </div>
             </section>
             <section className="card stack">
@@ -180,7 +182,7 @@ function ExportButton({ period }: { period: Period }) {
     for (const e of (exp.data || []) as any[]) if (e.status !== 'rejected' && e.status !== 'pending') rows.push([e.incurred_on, 'Expense', '', e.category, e.description || '', (-e.amount_cents / 100).toFixed(2)]);
     download(`tidyo-${isoDate(from)}-${isoDate(addDays(to, -1))}.csv`, rows);
   };
-  return <button className="btn btn-secondary" onClick={run}><Icon name="receipt" size={18} />{t('fin.export')}</button>;
+  return <button className="btn btn-secondary btn-left" onClick={run}><Icon name="receipt" size={18} /><span className="btn-2l"><span>{t('fin.export')}</span><small>CSV · QuickBooks</small></span></button>;
 }
 
 // ─────────────── Despesas ───────────────
@@ -278,14 +280,14 @@ function CompanyExpenseForm({ clients, onClose, onSaved }: { clients: Client[]; 
         </div>
         <div className="grid2">
           <Field label={t('exp.amount')}><input className="input" inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} required /></Field>
-          <Field label={t('job.date')}><input className="input" type="date" value={date} onChange={(e) => setDate(e.target.value)} /></Field>
+          <Field label={t('job.date')}><DateField label={t('job.date')} value={date} onChange={setDate} /></Field>
         </div>
         <Field label={`${t('exp.desc')} (${t('c.optional')})`}><input className="input" value={desc} onChange={(e) => setDesc(e.target.value)} /></Field>
         <Field label={`${t('job.client')} (${t('c.optional')})`} hint={t('fin.clientHint')}>
-          <select className="select" value={clientId} onChange={(e) => setClientId(e.target.value)}>
+          <Select value={clientId} onChange={(v) => setClientId(v)} label={t('job.client')}>
             <option value="">—</option>
             {clients.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-          </select>
+          </Select>
         </Field>
         <Field label={t('day.receipt')}><input className="input" type="file" accept="image/*" capture="environment" onChange={(e) => setFile(e.target.files?.[0] || null)} /></Field>
         <button className="btn btn-primary btn-block" disabled={busy || toCents(amount) <= 0}>{t('c.save')}</button>

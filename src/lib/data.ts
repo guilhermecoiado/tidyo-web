@@ -1,6 +1,6 @@
 import { supabase } from './supabase';
 
-export type Member = { id: string; display_name: string; role: 'owner' | 'manager' | 'helper'; status: string; language: string; user_id: string | null };
+export type Member = { id: string; display_name: string; role: 'owner' | 'manager' | 'helper'; status: string; language: string; user_id: string | null; gender?: 'f' | 'm' | null; origin_address?: string | null };
 export type Property = { id: string; client_id: string; label: string; address_line1: string; city: string; state: string; zip: string; lat: number | null; lng: number | null; access_instructions: string | null; pets: string | null; special_instructions: string | null };
 export type Client = { id: string; kind: 'residential' | 'commercial'; name: string; portal_user_id: string | null; email: string | null; phone: string | null; language: string; no_translate: boolean; notes: string | null; properties: Property[] };
 export type Job = {
@@ -31,7 +31,7 @@ export async function getClientJobs(clientId: string) {
 }
 
 export async function getMembers(companyId: string) {
-  const { data } = await supabase.from('memberships').select('id, display_name, role, status, language, user_id')
+  const { data } = await supabase.from('memberships').select('id, display_name, role, status, language, user_id, gender, origin_address')
     .eq('company_id', companyId).in('status', ['active', 'invited']).order('display_name');
   return (data || []) as Member[];
 }

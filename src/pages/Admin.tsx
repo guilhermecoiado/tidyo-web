@@ -230,17 +230,18 @@ export function AdSlot() {
     });
   }, [session, company]);
   if (!ad) return null;
-  const c = ad.content?.[lang] || ad.content?.en || {};
+  const c = ad.content?.[lang] || ad.content?.en || Object.values(ad.content || {})[0] || {};
+  if (!c.title && !c.body) return null;
   const log = (event: string) => session && supabase.from('ad_events').insert({ campaign_id: ad.id, user_id: session.user.id, company_id: company?.id || null, event }).then(() => undefined);
   const close = () => { try { const h = JSON.parse(localStorage.getItem('tidyo.adsClosed') || '[]'); localStorage.setItem('tidyo.adsClosed', JSON.stringify([...h, ad.id])); } catch { /* ignore */ } log('close'); setAd(null); };
   const href = ad.cta_url ? `${ad.cta_url}${ad.cta_url.includes('?') ? '&' : '?'}${new URLSearchParams(ad.utm || {}).toString()}` : undefined;
   return (
-    <div className={ad.format === 'cta_card' ? 'card stack' : 'card row'} style={{ background: 'var(--brand-light)', borderColor: '#B7E3D6', gap: 8, position: 'relative' }} role="complementary" aria-label={c.title}>
-      <div className="grow" style={{ paddingRight: 36 }}>
+    <div className="card stack ad-card" role="complementary" aria-label={c.title}>
+      <div style={{ paddingRight: 36 }}>
         {c.title && <div className="bold">{c.title}</div>}
         {c.body && <div className="small">{c.body}</div>}
       </div>
-      {href && c.cta && <a className="btn btn-primary" style={{ minHeight: 40, alignSelf: ad.format === 'cta_card' ? 'flex-start' : 'center' }} href={href} target="_blank" rel="noreferrer" onClick={() => log('click')}>{c.cta}</a>}
+      {href && c.cta && <a className="btn btn-primary" style={{ minHeight: 40, alignSelf: 'flex-start' }} href={href} target="_blank" rel="noreferrer" onClick={() => log('click')}>{c.cta}</a>}
       <button className="icon-btn" onClick={close} aria-label="×" style={{ position: 'absolute', top: 2, right: 2, background: 'transparent', border: 0 }}><Icon name="x" size={16} /></button>
     </div>
   );

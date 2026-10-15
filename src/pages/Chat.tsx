@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase';
 import { useApp } from '../lib/session';
 import { Icon, LoadingList, Sheet } from '../components/ui';
 import { LANG_LABEL, type Lang } from '../lib/i18n';
+import { guessGender } from '../lib/gender';
 
 type Conv = { id: string; company_id: string; other_user: string; other_name: string; last_message: string | null; last_message_at: string | null; unread: number };
 type Msg = { id: string; sender_id: string; body: string; body_language: Lang | null; translations: Record<string, string>; created_at: string };
@@ -52,7 +53,7 @@ export function ChatList() {
 }
 
 function ContactPicker({ companyId, onClose, onOpen }: { companyId: string; onClose: () => void; onOpen: (id: string) => void }) {
-  const { t, tErr, toast } = useApp();
+  const { t, tg, tErr, toast } = useApp();
   const [list, setList] = useState<Contact[] | null>(null);
   useEffect(() => { supabase.rpc('chat_contacts', { p_company: companyId }).then(({ data }) => setList((data || []) as Contact[])); }, [companyId]);
   const open = async (c: Contact) => {
@@ -63,7 +64,7 @@ function ContactPicker({ companyId, onClose, onOpen }: { companyId: string; onCl
     <Sheet title={t('ch.new')} onClose={onClose}>
       {!list ? <LoadingList n={3} /> : list.length === 0 ? <span className="muted">{t('ch.noContacts')}</span> : list.map((c) => (
         <button key={c.user_id} className="item" onClick={() => open(c)}>
-          <span className="body"><span className="title">{c.name}</span><span className="small muted">{c.kind === 'client' ? t('job.client') : t(`team.${c.kind}`)} · {LANG_LABEL[c.language]}</span></span>
+          <span className="body"><span className="title">{c.name}</span><span className="small muted">{c.kind === 'client' ? t('job.client') : tg(`team.${c.kind}`, guessGender(c.name))} · {LANG_LABEL[c.language]}</span></span>
           <Icon name="chevR" size={18} />
         </button>
       ))}

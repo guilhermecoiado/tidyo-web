@@ -2,10 +2,11 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useApp } from '../lib/session';
-import { Icon, LoadingList, Logo, OwnerNav, Sheet, Sparkle, StatusBadge, Segmented, Confirm } from '../components/ui';
+import { Icon, LoadingList, Logo, OwnerNav, Sheet, Sparkle, StatusBadge, Segmented, Confirm, Switch } from '../components/ui';
+import { guessGender, type Gender } from '../lib/gender';
 import { ClientDetail, ClientForm, InvoiceForm, InviteForm, JobDetail, JobForm, PaymentForm } from '../components/forms';
 import { findConflicts, getClients, getInvoicedJobIds, getInvoices, getJobs, getMembers, isOverdue, type Client, type Invoice, type Job, type Member } from '../lib/data';
-import { addDays, dayLabel, longDay, money, startOfDay, time } from '../lib/format';
+import { addDays, dayLabel, longDay, money, shortDay, startOfDay, time } from '../lib/format';
 import { LANG_LABEL, type Lang } from '../lib/i18n';
 import { FinanceTabs } from './Finance';
 import { getContracts } from './Contracts';
@@ -13,6 +14,7 @@ import { Bell } from './Inbox';
 import { AdSlot } from './Admin';
 import { SecuritySection } from './Security';
 import { PushToggle } from '../components/PushToggle';
+import { InstallCard } from '../components/InstallCard';
 
 function useOwnerData() {
   const { company } = useApp();
@@ -27,12 +29,18 @@ function useOwnerData() {
   return { members, clients, reload };
 }
 
+// "8:00" with a small "AM" under it, so 12-hour times never wrap
+export function TimeCell({ iso, lang }: { iso: string; lang: Lang }) {
+  const [hm, ap] = time(iso, lang).split(/\s+/);
+  return <span className="time">{hm}{ap && <small>{ap}</small>}</span>;
+}
+
 function JobRow({ job, members, onOpen }: { job: Job; members: Member[]; onOpen: () => void }) {
   const { lang, t } = useApp();
   const who = members.find((m) => m.id === job.job_assignments[0]?.membership_id)?.display_name || t('c.unassigned');
   return (
     <button className="item" onClick={onOpen}>
-      <span className="time">{time(job.scheduled_start, lang)}</span>
+      <TimeCell iso={job.scheduled_start} lang={lang} />
       <span className="body">
         <span className="title">{job.clients?.name}</span>
         <span className="small muted" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{job.properties?.city} · {who}</span>
@@ -120,9 +128,9 @@ export function Home() {
       <main className="page">
         <div className="topbar">
           <Logo size={38} />
-          <div className="grow">
-            <div className="small muted bold">{longDay(new Date(), lang)}</div>
-            <h1 style={{ fontSize: 21 }}>{t('home.hello')}{first ? `, ${first}` : ''}</h1>
+          <div className="grow home-hello">
+            <div className="small muted bold one-line">{shortDay(new Date(), lang)}</div>
+            <h1 className="one-line">{t('home.hello')}{first ? `, ${first}` : ''}</h1>
           </div>
           <Link to="/mensagens" className="icon-btn" aria-label={t('ch.title')}><Icon name="chat" size={20} /></Link>
           <Bell />
@@ -138,6 +146,7 @@ export function Home() {
           </button>
         )}
 
+        <InstallCard />
         <AdSlot />
         {sub?.status === 'trialing' && (
           <div className="small muted">{t('home.trial')} {new Date(sub.trial_ends_at).toLocaleDateString(lang, { day: 'numeric', month: 'short' })}</div>
@@ -145,7 +154,7 @@ export function Home() {
 
         <div className="grid3">
           <div className="kpi"><div className="label">{t('home.jobsToday')}</div><div className="value num">{jobs ? jobs.filter((j) => j.status !== 'canceled').length : '–'}</div></div>
-          <div className="kpi"><div className="label">{t('home.receivable')}</div><div className="value num" style={{ fontSize: 18 }}>{money(receivable, lang)}</div></div>
+          <div className="kpi"><div className="label">{t('home.receivable')}</div><div className="value num fit">{money(receivable, lang)}</div></div>
           <div className="kpi"><div className="label">{t('home.clients')}</div><div className="value num">{clients ? clients.length : '–'}</div></div>
         </div>
 
@@ -222,15 +231,17 @@ export function Schedule() {
     <div className="shell">
       <main className="page">
         <div className="topbar">
-          <h1 className="grow">{t('nav.schedule')}</h1>
-          <Link className="btn btn-secondary" style={{ minHeight: 44 }} to="/app/rotas"><Icon name="route" size={18} />{t('rt.short')}</Link>
-          <button className="btn btn-primary" style={{ minHeight: 44 }} onClick={() => setNewJob(true)}><Icon name="plus" size={18} />{t('home.newJob')}</button>
+          <h1 className="grow one-line">{t('nav.schedule')}</h1>
+          <Link className="btn btn-secondary btn-sm" to="/app/rotas"><Icon name="route" size={18} />{t('rt.short')}</Link>
+          <button className="btn btn-primary btn-sm" onClick={() => setNewJob(true)} aria-label={t('home.newJob')}><Icon name="plus" size={18} />{t('c.new')}</button>
         </div>
-        <div className="row">
+        <div className="row day-strip">
           <button className="icon-btn" aria-label="‹" onClick={() => setDay(addDays(day, -1))}><Icon name="chevL" size={18} /></button>
-          <div className="chips" style={{ flex: 1 }}>
+          <div className="chips grow">
             {week.map((d) => (
-              <button key={d.toISOString()} className="chip" aria-pressed={d.getTime() === day.getTime()} onClick={() => setDay(d)}>{dayLabel(d, lang)}</button>
+              <button key={d.toISOString()} className={`day-chip${d.getTime() === startOfDay(new Date()).getTime() ? ' is-today' : ''}`} aria-pressed={d.getTime() === day.getTime()} onClick={() => setDay(d)} aria-label={longDay(d, lang)}>
+                <span>{d.toLocaleDateString(lang, { weekday: 'short' }).replace('.', '')}</span><b>{d.getDate()}</b>
+              </button>
             ))}
           </div>
           <button className="icon-btn" aria-label="›" onClick={() => setDay(addDays(day, 1))}><Icon name="chevR" size={18} /></button>
@@ -267,8 +278,8 @@ export function Clients() {
     <div className="shell">
       <main className="page">
         <div className="topbar">
-          <h1 className="grow">{t('nav.clients')}</h1>
-          <button className="btn btn-primary" style={{ minHeight: 44 }} onClick={() => setCreate(true)}><Icon name="plus" size={18} />{t('cl.new')}</button>
+          <h1 className="grow one-line">{t('nav.clients')}</h1>
+          <button className="btn btn-primary btn-sm" onClick={() => setCreate(true)}><Icon name="plus" size={18} />{t('cl.new')}</button>
         </div>
         <label className="row card tight" style={{ padding: '0 12px' }}>
           <Icon name="search" size={18} color="var(--ink-muted)" />
@@ -318,8 +329,8 @@ export function Billing() {
     <div className="shell">
       <main className="page">
         <div className="topbar">
-          <h1 className="grow">{t('nav.finance')}</h1>
-          <button className="btn btn-primary" style={{ minHeight: 44 }} onClick={() => setCreate(true)}><Icon name="plus" size={18} />{t('inv.new')}</button>
+          <h1 className="grow one-line">{t('nav.finance')}</h1>
+          <button className="btn btn-primary btn-sm" onClick={() => setCreate(true)}><Icon name="plus" size={18} />{t('inv.new')}</button>
         </div>
         <FinanceTabs />
         <div className="grid2">
@@ -361,12 +372,19 @@ export function Billing() {
 
 // ─────────────── Mais ───────────────
 export function More() {
-  const { t, lang, setLang, company, membership, sub, refresh, toast, isAdmin } = useApp();
+  const { t, tg, lang, setLang, company, membership, sub, refresh, toast, isAdmin } = useApp();
   const { members, reload } = useOwnerData();
   const [invite, setInvite] = useState(false);
   const [askOut, setAskOut] = useState(false);
   const [originFor, setOriginFor] = useState<Member | null>(null);
   const [originAddr, setOriginAddr] = useState('');
+  const [memberG, setMemberG] = useState<'f' | 'm'>('f');
+  const saveGender = async (g: 'f' | 'm') => {
+    if (!originFor) return;
+    setMemberG(g);
+    const { error } = await supabase.from('memberships').update({ gender: g }).eq('id', originFor.id);
+    if (error) toast(t('c.error')); else { reload(); if (originFor.id === membership?.id) refresh(); }
+  };
   const saveOrigin = async () => {
     if (!originFor) return;
     const { data, error } = await supabase.functions.invoke('geocode', { body: { table: 'memberships', ids: [originFor.id], address: originAddr } });
@@ -379,14 +397,26 @@ export function More() {
     const { error } = await supabase.from('companies').update({ [field]: !company[field] }).eq('id', company.id);
     if (!error) { await refresh(); toast(t('c.saved')); }
   };
-  const roleLabel = (r: string) => t(`team.${r}`);
+  const genderOf = (m: Member) => (m.gender as Gender | null) || guessGender(m.display_name);
+  const roleLabel = (m: Member) => tg(`team.${m.role}`, genderOf(m));
+  const planName = sub?.plan === 'essencial' ? 'Essencial' : sub?.plan === 'comercial' ? 'Comercial' : 'Pro';
   return (
     <div className="shell">
       <main className="page">
         <h1>{t('more.title')}</h1>
         <section className="card stack">
-          <div className="row"><Icon name="building" /><div className="grow"><div className="bold">{company?.name}</div>
-            <div className="small muted">{t('more.plan')}: {sub?.plan === 'essencial' ? 'Essencial' : sub?.plan === 'comercial' ? 'Comercial' : 'Pro'}{sub?.has_commercial && sub.plan !== 'comercial' ? ' + Comercial' : ''} · {sub?.status === 'trialing' ? `${t('home.trial')} ${new Date(sub.trial_ends_at).toLocaleDateString(lang, { day: 'numeric', month: 'short' })}` : sub?.status}</div></div></div>
+          <div className="row" style={{ alignItems: 'flex-start' }}>
+            <span className="icon-tile"><Icon name="building" size={20} /></span>
+            <div className="grow stack" style={{ gap: 6 }}>
+              <div className="bold one-line">{company?.name}</div>
+              <div className="meta-row">
+                <span className="badge b-ok">{t('more.plan')} {planName}{sub?.has_commercial && sub.plan !== 'comercial' ? ' + Comercial' : ''}</span>
+                {sub?.status === 'trialing'
+                  ? <span className="badge b-warn">{t('more.trialUntil', { date: new Date(sub.trial_ends_at).toLocaleDateString(lang, { day: 'numeric', month: 'short' }) })}</span>
+                  : sub?.status && <span className="badge b-neutral">{t(`sub.${sub.status}`)}</span>}
+              </div>
+            </div>
+          </div>
         </section>
 
         {company?.mode !== 'residential' && (
@@ -399,12 +429,12 @@ export function More() {
             <button className="btn btn-ghost" onClick={() => setInvite(true)}><Icon name="plus" size={18} />{t('team.invite')}</button></div>
           <div className="list">
             {members.map((m) => (
-              <div key={m.id} className="item" style={{ cursor: 'default' }}>
-                <span style={{ width: 38, height: 38, borderRadius: 38, background: 'var(--brand-dark)', color: '#5FD4C1', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, flex: 'none' }}>{m.display_name.slice(0, 1).toUpperCase()}</span>
-                <span className="body"><span className="title">{m.display_name}</span><span className="small muted">{roleLabel(m.role)} · {LANG_LABEL[m.language as Lang]}</span></span>
-                <span className={`badge ${m.status === 'active' ? 'b-ok' : 'b-warn'}`}>{m.status === 'active' ? t('team.active') : t('team.invited')}</span>
-                {m.status === 'active' && <button className="icon-btn" aria-label={t('team.origin')} onClick={() => { setOriginFor(m); setOriginAddr(''); }}><Icon name="pin" size={18} /></button>}
-              </div>
+              <button key={m.id} className="item" onClick={() => { setOriginFor(m); setOriginAddr(m.origin_address || ''); setMemberG(genderOf(m) === 'm' ? 'm' : 'f'); }}>
+                <span className="avatar">{m.display_name.slice(0, 1).toUpperCase()}</span>
+                <span className="body"><span className="title">{m.display_name}</span><span className="small muted one-line">{roleLabel(m)} · {LANG_LABEL[m.language as Lang]}</span></span>
+                {m.status !== 'active' && <span className="badge b-warn">{t('team.invited')}</span>}
+                <Icon name="chevR" size={18} color="var(--ink-muted)" />
+              </button>
             ))}
           </div>
         </section>
@@ -417,10 +447,7 @@ export function More() {
         {isOwner && (
           <section className="card stack">
             {(['allow_push_team', 'allow_push_clients'] as const).map((f) => (
-              <label key={f} className="row" style={{ minHeight: 44, cursor: 'pointer' }}>
-                <span className="grow"><span className="bold">{t(f === 'allow_push_team' ? 'more.pushTeam' : 'more.pushClients')}</span><br /><span className="small muted">{t('more.pushHint')}</span></span>
-                <input type="checkbox" role="switch" checked={!!company?.[f]} onChange={() => toggle(f)} style={{ width: 22, height: 22, accentColor: 'var(--action)' }} />
-              </label>
+              <Switch key={f} checked={!!company?.[f]} onChange={() => toggle(f)} label={t(f === 'allow_push_team' ? 'more.pushTeam' : 'more.pushClients')} hint={t('more.pushHint')} />
             ))}
           </section>
         )}
@@ -440,10 +467,22 @@ export function More() {
       <OwnerNav />
       {invite && <InviteForm onClose={() => setInvite(false)} onSaved={reload} />}
       {originFor && (
-        <Sheet title={`${t('team.origin')} · ${originFor.display_name}`} onClose={() => setOriginFor(null)}>
-          <span className="hint">{t('team.originHint')}</span>
+        <Sheet title={originFor.display_name} onClose={() => setOriginFor(null)}>
+          <div className="meta-row">
+            <span className="badge b-neutral">{roleLabel(originFor)}</span>
+            <span className={`badge ${originFor.status === 'active' ? 'b-ok' : 'b-warn'}`}>{originFor.status === 'active' ? tg('team.active', memberG) : t('team.invited')}</span>
+          </div>
+          {tg(`team.${originFor.role}`, 'f') !== tg(`team.${originFor.role}`, 'm') && <div className="stack" style={{ gap: 6 }}>
+            <span className="label">{t('team.address')}</span>
+            <Segmented<'f' | 'm'> value={memberG} onChange={saveGender} label={t('team.address')} options={[
+              { value: 'f', label: tg(`team.${originFor.role}`, 'f') }, { value: 'm', label: tg(`team.${originFor.role}`, 'm') }]} />
+          </div>}
+          {originFor.status === 'active' && <>
+          <span className="label">{t('team.origin')}</span>
+          <span className="hint">{tg('team.originHint', memberG)}</span>
           <input className="input" value={originAddr} onChange={(e) => setOriginAddr(e.target.value)} placeholder="12 Elm St, Waterbury, CT 06702" aria-label={t('team.origin')} autoComplete="street-address" />
           <button className="btn btn-primary" disabled={originAddr.trim().length < 6} onClick={saveOrigin}>{t('c.save')}</button>
+          </>}
         </Sheet>
       )}
       {askOut && <Confirm text={`${t('auth.signout')}?`} confirmLabel={t('auth.signout')} onCancel={() => setAskOut(false)}
