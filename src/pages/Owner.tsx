@@ -7,6 +7,7 @@ import { ClientDetail, ClientForm, InvoiceForm, InviteForm, JobDetail, JobForm, 
 import { findConflicts, getClients, getInvoicedJobIds, getInvoices, getJobs, getMembers, isOverdue, type Client, type Invoice, type Job, type Member } from '../lib/data';
 import { addDays, dayLabel, longDay, money, startOfDay, time } from '../lib/format';
 import { LANG_LABEL, type Lang } from '../lib/i18n';
+import { FinanceTabs } from './Finance';
 
 function useOwnerData() {
   const { company } = useApp();
@@ -289,9 +290,10 @@ export function Billing() {
     <div className="shell">
       <main className="page">
         <div className="topbar">
-          <h1 className="grow">{t('inv.title')}</h1>
+          <h1 className="grow">{t('nav.finance')}</h1>
           <button className="btn btn-primary" style={{ minHeight: 44 }} onClick={() => setCreate(true)}><Icon name="plus" size={18} />{t('inv.new')}</button>
         </div>
+        <FinanceTabs />
         <div className="grid2">
           <div className="kpi"><div className="label">{t('inv.open')}</div><div className="value num">{money(totalOpen, lang)}</div></div>
           <div className="kpi" style={totalOver ? { background: 'var(--danger-bg)', borderColor: '#F5D3C2' } : undefined}><div className="label">{t('inv.overdue')}</div><div className="value num">{money(totalOver, lang)}</div></div>

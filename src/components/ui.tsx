@@ -1,5 +1,5 @@
 import { useEffect, useId, useRef, type ReactNode } from 'react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, useLocation } from 'react-router-dom';
 import { useApp } from '../lib/session';
 
 export function Logo({ size = 36, animated = false }: { size?: number; animated?: boolean }) {
@@ -154,18 +154,19 @@ export function FullLoader() {
 
 export function OwnerNav() {
   const { t } = useApp();
+  const { pathname } = useLocation();
   const items: [string, string, string][] = [
     ['/app', 'home', t('nav.today')],
     ['/app/agenda', 'cal', t('nav.schedule')],
     ['/app/clientes', 'users', t('nav.clients')],
-    ['/app/cobrancas', 'dollar', t('nav.money')],
+    ['/app/financas', 'dollar', t('nav.finance')],
     ['/app/mais', 'more', t('nav.more')],
   ];
   return (
     <nav className="bottom-nav" aria-label="Menu">
       <div className="inner">
         {items.map(([to, icon, label]) => (
-          <NavLink key={to} to={to} end={to === '/app'} className={({ isActive }) => (isActive ? 'active' : '')}>
+          <NavLink key={to} to={to} end={to === '/app'} className={({ isActive }) => (isActive || (to === '/app/financas' && pathname.startsWith('/app/cobrancas')) ? 'active' : '')}>
             <Icon name={icon} size={22} />
             {label}
           </NavLink>
