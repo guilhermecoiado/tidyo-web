@@ -109,3 +109,13 @@ h3 { font-size: 16px; font-weight: 800; }
 .divider { height: 1px; background: var(--line); }
 .link-btn { background: none; border: 0; padding: 0 4px; min-height: var(--tap-min); color: var(--action); font-weight: 800; cursor: pointer; }
 @media (prefers-reduced-motion: reduce) { .scrim, .sheet, .dialog, .toast { animation: none; } .btn { transition: none; } }
+
+/* auth screens: centred brand and balanced headline */
+.wordmark-text { font-size: 24px; }
+.auth-wrap .wordmark { flex-direction: column; gap: 10px; align-self: center; margin-bottom: 4px; }
+.auth-wrap .wordmark svg { width: 76px; height: 76px; filter: drop-shadow(0 10px 22px rgba(10, 61, 53, .14)); }
+.auth-wrap .wordmark-text { font-size: 30px; line-height: 1; }
+.auth-wrap > h1, .auth-head { text-align: center; align-items: center; }
+.auth-wrap > h1, .auth-head h1 { font-size: 28px; line-height: 1.12; text-wrap: balance; max-width: 18ch; margin-inline: auto; }
+.auth-head p { text-wrap: balance; max-width: 34ch; }
+.auth-wrap > p.muted { text-align: center; text-wrap: balance; }

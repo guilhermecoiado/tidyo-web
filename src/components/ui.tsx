@@ -19,9 +19,9 @@ export function Logo({ size = 36, animated = false }: { size?: number; animated?
 
 export function Wordmark() {
   return (
-    <span className="row" style={{ gap: 8 }}>
+    <span className="row wordmark" style={{ gap: 8 }}>
       <Logo size={34} />
-      <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 24, letterSpacing: '-0.035em', color: 'var(--brand-dark)' }}>tidyo</span>
+      <span className="wordmark-text" style={{ fontFamily: 'var(--font-display)', fontWeight: 800, letterSpacing: '-0.035em', color: 'var(--brand-dark)' }}>tidyo</span>
     </span>
   );
 }

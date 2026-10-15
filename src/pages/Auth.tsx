@@ -50,7 +50,7 @@ export default function Auth({ initial = 'login', title, subtitle }: { initial?:
   return (
     <main className="auth-wrap">
       <Wordmark />
-      <div className="stack" style={{ gap: 6 }}>
+      <div className="stack auth-head" style={{ gap: 8 }}>
         <h1>{title || t('auth.welcome')}</h1>
         <p className="muted" style={{ margin: 0 }}>{subtitle || t('auth.sub')}</p>
       </div>
