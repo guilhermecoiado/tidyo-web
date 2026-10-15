@@ -5,6 +5,8 @@ import { Confirm, Field, Icon, Segmented, Sheet, StatusBadge } from './ui';
 import { createInvoice, getClientJobs, getJobs, findConflicts, type Client, type Job, type Member, type Invoice } from '../lib/data';
 import { addDays, isoDate, money, time, dayLabel, toCents, randomToken, sha256Hex } from '../lib/format';
 import { LANG_LABEL, type Lang } from '../lib/i18n';
+import { ChecklistView, PhotoStrip, Stars } from './proof';
+import { getChecklist, getJobPhotos, type CheckItem, type Photo } from '../lib/photos';
 
 // ─────────────── New job ───────────────
 export function JobForm({ clients, members, onClose, onSaved, defaultDate }: {
@@ -141,6 +143,13 @@ export function JobDetail({ job, members, onClose, onChanged }: { job: Job; memb
   const [busy, setBusy] = useState(false);
   const [ask, setAsk] = useState(false);
   const [helper, setHelper] = useState(job.job_assignments[0]?.membership_id || '');
+  const [items, setItems] = useState<CheckItem[] | null>(null);
+  const [photos, setPhotos] = useState<Photo[]>([]);
+  useEffect(() => {
+    if (job.status === 'scheduled') return;
+    getChecklist(job.id).then(setItems).catch(() => setItems([]));
+    getJobPhotos(job.id).then(setPhotos);
+  }, [job.id, job.status]);
   const assigned = members.find((m) => m.id === job.job_assignments[0]?.membership_id);
 
   const setStatus = async (status: string) => {
@@ -183,6 +192,16 @@ export function JobDetail({ job, members, onClose, onChanged }: { job: Job; memb
       {job.client_notes && <div className="stack" style={{ gap: 4 }}><span className="label">{t('job.notesClient')}</span><span>{job.client_notes}</span></div>}
       {job.internal_notes && <div className="stack" style={{ gap: 4 }}><span className="label">{t('job.notesInternal')}</span><span>{job.internal_notes}</span></div>}
       {job.completion_note && <div className="card tight">{job.completion_note}</div>}
+      {job.status === 'completed' && (
+        <div className="card stack" style={{ gap: 6 }}>
+          <span className="label">{t('ck.rating')}</span>
+          {job.rating ? <><Stars value={job.rating} size={22} />{job.rating_comment && <span className="small">{job.rating_comment}</span>}</>
+            : <span className="small muted">{job.rating_status === 'auto_approved' ? t('ck.autoApproved') : t('ck.waitingRating')}</span>}
+        </div>
+      )}
+      {photos.some((p) => p.kind === 'before') && <PhotoStrip title={t('ck.before')} photos={photos.filter((p) => p.kind === 'before')} />}
+      {photos.some((p) => p.kind === 'after') && <PhotoStrip title={t('ck.after')} photos={photos.filter((p) => p.kind === 'after')} />}
+      {items && items.length > 0 && <details className="card"><summary className="bold" style={{ cursor: 'pointer', minHeight: 32 }}>{t('ck.progress', { done: items.filter((i) => i.done_at).length, total: items.length })}</summary><div style={{ marginTop: 10 }}><ChecklistView items={items} editable={false} /></div></details>}
       {job.status === 'scheduled' && (
         <Field label={t('job.helper')}>
           <select className="select" value={helper} onChange={(e) => reassign(e.target.value)}>
@@ -268,7 +287,14 @@ export function ClientForm({ onClose, onSaved }: { onClose: () => void; onSaved:
 
 // ─────────────── Client details ───────────────
 export function ClientDetail({ client, onClose }: { client: Client; onClose: () => void }) {
-  const { t, lang } = useApp();
+  const { t, tErr, lang, company, toast } = useApp();
+  const [portalLink, setPortalLink] = useState('');
+  const invitePortal = async () => {
+    const token = randomToken();
+    const { error } = await supabase.from('clients').update({ portal_invite_hash: await sha256Hex(token), portal_invite_expires_at: addDays(new Date(), 7).toISOString() }).eq('id', client.id);
+    if (error) { toast(tErr(error.message)); return; }
+    setPortalLink(`${window.location.origin}/portal/convite?t=${token}`);
+  };
   const [jobs, setJobs] = useState<Job[] | null>(null);
   const [profit, setProfit] = useState<{ revenue_cents: number; labour_cents: number; expense_cents: number; profit_cents: number } | null>(null);
   useEffect(() => {
@@ -303,6 +329,21 @@ export function ClientDetail({ client, onClose }: { client: Client; onClose: () 
         </div>
       </div>
       {client.notes && <div className="card tight small"><b>{t('cl.notes')}:</b> {client.notes}</div>}
+      <div className="card stack" style={{ gap: 8 }}>
+        {client.portal_user_id ? <span className="row small bold"><Icon name="check" size={18} color="var(--action)" />{t('pt.connected')}</span> : !portalLink ? (
+          <><button className="btn btn-secondary" onClick={invitePortal}><Icon name="share" size={18} />{t('pt.invite')}</button><span className="hint">{t('pt.inviteHint')}</span></>
+        ) : (
+          <>
+            <div className="small" style={{ wordBreak: 'break-all' }}>{portalLink}</div>
+            <div className="grid2">
+              <a className="btn btn-primary" style={{ minHeight: 44 }} target="_blank" rel="noreferrer" href={`https://wa.me/${(client.phone || '').replace(/\D/g, '')}?text=${encodeURIComponent(t('pt.waText', { company: company?.name || '', link: portalLink }))}`}>{t('team.whatsapp')}</a>
+              {client.email
+                ? <a className="btn btn-secondary" href={`mailto:${client.email}?subject=${encodeURIComponent(company?.name || 'Tidyo')}&body=${encodeURIComponent(t('pt.waText', { company: company?.name || '', link: portalLink }))}`}>E-mail</a>
+                : <button className="btn btn-secondary" onClick={async () => { try { await navigator.clipboard.writeText(portalLink); toast(t('c.copied')); } catch { /* ignore */ } }}>{t('c.copy')}</button>}
+            </div>
+          </>
+        )}
+      </div>
       <div className="stack" style={{ gap: 8 }}>
         <span className="label">{t('cl.history')}</span>
         {!jobs ? <div className="skeleton" style={{ height: 56 }} /> : jobs.length === 0 ? <span className="muted small">{t('cl.noHistory')}</span> : jobs.map((j) => (

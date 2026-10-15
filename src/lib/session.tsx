@@ -7,6 +7,7 @@ import { errorKey } from './errors';
 export type Membership = { id: string; company_id: string; role: 'owner' | 'manager' | 'helper'; status: string; display_name: string; language: Lang };
 export type Company = { id: string; name: string; mode: 'residential' | 'commercial' | 'both'; solo: boolean; allow_push_team: boolean; allow_push_clients: boolean; default_language: Lang };
 export type Subscription = { plan: string; status: string; trial_ends_at: string; has_commercial: boolean; commercial_tier: number | null };
+export type PortalClient = { client_id: string; company_id: string; name: string; language: Lang; company_name: string };
 export type Profile = { id: string; full_name: string; language: Lang };
 
 type Toast = { text: string; action?: { label: string; run: () => void } } | null;
@@ -18,6 +19,7 @@ type Ctx = {
   membership: Membership | null;
   company: Company | null;
   sub: Subscription | null;
+  portal: PortalClient | null;
   lang: Lang;
   isStaff: boolean;
   setLang: (l: Lang) => void;
@@ -37,13 +39,14 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const [membership, setMembership] = useState<Membership | null>(null);
   const [company, setCompany] = useState<Company | null>(null);
   const [sub, setSub] = useState<Subscription | null>(null);
+  const [portal, setPortal] = useState<PortalClient | null>(null);
   const [lang, setLangState] = useState<Lang>(detectLang());
   const [toastState, setToast] = useState<Toast>(null);
   const toastTimer = useRef<number>();
 
   const load = useCallback(async (s: Session | null) => {
     setSession(s);
-    if (!s) { setProfile(null); setMembership(null); setCompany(null); setSub(null); setReady(true); return; }
+    if (!s) { setProfile(null); setMembership(null); setCompany(null); setSub(null); setPortal(null); setReady(true); return; }
     const [{ data: p }, { data: ms }] = await Promise.all([
       supabase.from('profiles').select('id, full_name, language').eq('id', s.user.id).maybeSingle(),
       supabase.from('memberships').select('id, company_id, role, status, display_name, language').eq('user_id', s.user.id).eq('status', 'active'),
@@ -60,7 +63,12 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       ]);
       setCompany(c as Company | null);
       setSub(sb as Subscription | null);
-    } else { setCompany(null); setSub(null); }
+      setPortal(null);
+    } else {
+      setCompany(null); setSub(null);
+      const { data: pc } = await supabase.rpc('portal_me');
+      setPortal(((pc || []) as PortalClient[])[0] || null);
+    }
     setReady(true);
   }, []);
 
@@ -92,10 +100,10 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const value = useMemo<Ctx>(() => ({
-    ready, session, profile, membership, company, sub, lang,
+    ready, session, profile, membership, company, sub, portal, lang,
     isStaff: membership?.role === 'owner' || membership?.role === 'manager',
     setLang, t, tErr, refresh: async () => { const { data } = await supabase.auth.getSession(); await load(data.session); }, toast,
-  }), [ready, session, profile, membership, company, sub, lang, setLang, t, tErr, load, toast]);
+  }), [ready, session, profile, membership, company, sub, portal, lang, setLang, t, tErr, load, toast]);
 
   return (
     <SessionCtx.Provider value={value}>

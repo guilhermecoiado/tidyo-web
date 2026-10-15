@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useApp } from '../lib/session';
 import { Confirm, Field, Icon, LoadingList, Logo, Sheet, StatusBadge } from '../components/ui';
@@ -22,6 +22,7 @@ export default function MyDay() {
   const [problem, setProblem] = useState<HJob | null>(null);
   const [askOut, setAskOut] = useState(false);
   const [, tick] = useState(0);
+  const nav = useNavigate();
 
   const load = useCallback(async () => {
     if (!membership) return;
@@ -105,8 +106,8 @@ export default function MyDay() {
             {j.pets && <div className="small"><b>{t('cl.pets')}:</b> {j.pets}</div>}
             {j.special_instructions && <div className="small"><b>{t('cl.special')}:</b> {j.special_instructions}</div>}
             {j.client_notes && <div className="card tight small" style={{ background: 'var(--warn-bg)', borderColor: '#F3DDB8' }}><b>{t('job.notesClient')}:</b> {j.client_notes}</div>}
-            {j.status === 'scheduled' && <button className="btn btn-primary" onClick={() => progress(j, 'in_progress')}>{t('day.start')}</button>}
-            {j.status === 'in_progress' && <button className="btn btn-primary" onClick={() => { setNote(''); setFinish(j); }}>{t('day.finish')}</button>}
+            {j.status === 'scheduled' && <button className="btn btn-primary" onClick={async () => { await progress(j, 'in_progress'); nav(`/dia/servico/${j.job_id}`); }}>{t('day.start')}</button>}
+            {j.status !== 'scheduled' && <Link className={`btn ${j.status === 'in_progress' ? 'btn-primary' : 'btn-secondary'}`} to={`/dia/servico/${j.job_id}`}>{j.status === 'in_progress' ? t('ck.open') : t('ck.open')}</Link>}
             {j.status !== 'completed' && <button className="btn btn-ghost" onClick={() => setProblem(j)}><Icon name="alert" size={18} />{t('day.problem')}</button>}
           </section>
         ))}
