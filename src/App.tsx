@@ -10,6 +10,8 @@ import Inbox, { Help } from './pages/Inbox';
 import Admin from './pages/Admin';
 import { MfaPrompt } from './pages/Security';
 import Contracts from './pages/Contracts';
+import { ChatList, ChatThread } from './pages/Chat';
+import RoutesPage from './pages/Routes';
 import { Expenses, FinanceOverview, TeamPay } from './pages/Finance';
 import Landing from './pages/Landing';
 import JobWork from './pages/JobWork';
@@ -67,6 +69,9 @@ function Routed() {
       <Route path="/app/financas/despesas" element={<Gate need="staff"><Expenses /></Gate>} />
       <Route path="/app/financas/equipe" element={<Gate need="staff"><TeamPay /></Gate>} />
       <Route path="/app/contratos" element={<Gate need="staff"><Contracts /></Gate>} />
+      <Route path="/mensagens" element={<Gate need="any"><ChatList /></Gate>} />
+      <Route path="/mensagens/:id" element={<Gate need="any"><ChatThread /></Gate>} />
+      <Route path="/app/rotas" element={<Gate need="staff"><RoutesPage /></Gate>} />
       <Route path="/avisos" element={<Gate need="any"><Inbox /></Gate>} />
       <Route path="/ajuda" element={<Gate need="any"><Help /></Gate>} />
       <Route path="/admin" element={<Gate need="admin"><Admin /></Gate>} />

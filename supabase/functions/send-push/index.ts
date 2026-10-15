@@ -14,6 +14,7 @@ const T: Record<string, [string, string, string]> = {
   job_rated: ['{client} avaliou a visita com {rating} estrelas', '{client} rated the visit {rating} stars', '{client} calificó la visita con {rating} estrellas'],
   job_assigned: ['Novo serviço: {client}', 'New job: {client}', 'Nuevo servicio: {client}'],
   support_reply: ['O suporte respondeu sua mensagem', 'Support replied to your message', 'Soporte respondió tu mensaje'],
+  message: ['Nova mensagem de {who}', 'New message from {who}', 'Nuevo mensaje de {who}'],
   tidy_daily: ['Tidy: {total} item(ns) pedem atenção hoje', 'Tidy: {total} item(s) need attention today', 'Tidy: {total} punto(s) necesitan atención hoy'],
 };
 const idx: Record<L, number> = { 'pt-BR': 0, en: 1, es: 2 };

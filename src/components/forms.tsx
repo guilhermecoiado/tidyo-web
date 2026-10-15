@@ -254,6 +254,8 @@ export function ClientForm({ onClose, onSaved }: { onClose: () => void; onSaved:
     });
     setBusy(false);
     if (e2) { setError(tErr(e2.message)); await supabase.from('clients').delete().eq('id', c.id); return; }
+    const { data: pr } = await supabase.from('properties').select('id').eq('client_id', c.id);
+    if (pr?.length) supabase.functions.invoke('geocode', { body: { table: 'properties', ids: pr.map((x: { id: string }) => x.id) } }).then(() => undefined);
     toast(t('cl.created'));
     onSaved();
   };

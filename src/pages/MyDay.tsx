@@ -7,6 +7,7 @@ import { Bell } from './Inbox';
 import { cacheGet, cacheSet, perform, useOffline } from '../lib/offline';
 import { compressImage } from '../lib/photos';
 import { PushToggle } from '../components/PushToggle';
+import { navUrl } from './Routes';
 import { fmtHours, hoursBetween, startOfDay, time, toCents, longDay, addDays, isoDate } from '../lib/format';
 
 type HJob = {
@@ -37,7 +38,8 @@ export default function MyDay() {
     let all = (data || []) as HJob[];
     if (error) all = cacheGet<HJob[]>('helper_jobs') || [];
     else cacheSet('helper_jobs', all);
-    setJobs(all.filter((j) => new Date(j.scheduled_start) >= today && new Date(j.scheduled_start) < addDays(today, 1) && j.status !== 'canceled'));
+    setJobs(all.filter((j) => new Date(j.scheduled_start) >= today && new Date(j.scheduled_start) < addDays(today, 1) && j.status !== 'canceled')
+      .sort((a, b) => ((a as HJob & { route_position?: number }).route_position ?? 99) - ((b as HJob & { route_position?: number }).route_position ?? 99) || a.scheduled_start.localeCompare(b.scheduled_start)));
     const { data: te, error: e2 } = await supabase.from('time_entries').select('id, clock_in, clock_out')
       .eq('membership_id', membership.id).gte('clock_in', today.toISOString()).order('clock_in');
     if (e2) setEntries(cacheGet<Entry[]>(`time_${isoDate(today)}`) || []);
@@ -153,6 +155,12 @@ export default function MyDay() {
           </section>
         ))}
 
+        {jobs && jobs.filter((j) => j.status !== 'completed').length > 1 && (
+          <a className="btn btn-secondary" target="_blank" rel="noreferrer" href={navUrl(null, jobs.filter((j) => j.status !== 'completed').map((j) => ({ address: `${j.address_line1}, ${j.city}, ${j.state} ${j.zip}` })))}>
+            <Icon name="route" size={18} />{t('rt.openFull')}
+          </a>
+        )}
+        <Link className="btn btn-secondary" to="/mensagens"><Icon name="chat" size={18} />{t('ch.talkOwner')}</Link>
         <button className="btn btn-secondary" onClick={() => setExpense(true)}><Icon name="receipt" size={18} />{t('day.expense')}</button>
         <PushToggle />
         <Link className="btn btn-ghost" to="/ajuda"><Icon name="help" size={18} />{t('more.help')}</Link>

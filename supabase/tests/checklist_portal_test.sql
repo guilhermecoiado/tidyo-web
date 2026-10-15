@@ -44,3 +44,18 @@ select pg_temp.check((select count(*) from public.notifications where read_at is
 select pg_temp.check((select count(*) from public.admin_companies()) = 0, 'non-admin sees no subscribers');
 reset role;
 \echo 'Notification scenarios passed.'
+
+-- Chat
+set role authenticated;
+select pg_temp.as_user('00000000-0000-0000-0000-00000000000c');
+select public.open_conversation((select company_id from public.memberships where id = '10000000-0000-0000-0000-0000000000c0'), '00000000-0000-0000-0000-00000000000a') as conv \gset
+select pg_temp.check(public.open_conversation((select company_id from public.memberships where id = '10000000-0000-0000-0000-0000000000c0'), '00000000-0000-0000-0000-00000000000a') = :'conv', 'same pair reuses the conversation');
+select pg_temp.expect_error($$select public.open_conversation((select company_id from public.memberships where id = '10000000-0000-0000-0000-0000000000c0'), '00000000-0000-0000-0000-00000000000d')$$, 'helper cannot open a chat with another helper');
+insert into public.messages (conversation_id, company_id, sender_id, body) values (:'conv', (select company_id from public.memberships where id = '10000000-0000-0000-0000-0000000000c0'), auth.uid(), 'Hola, ya llegué');
+select pg_temp.as_user('00000000-0000-0000-0000-00000000000a');
+select pg_temp.check((select unread from public.my_conversations() where id = :'conv') = 1, 'owner sees 1 unread message');
+select pg_temp.check((select count(*) from public.notifications where kind = 'message') = 1, 'owner notified of the message');
+select pg_temp.as_user('00000000-0000-0000-0000-00000000000d');
+select pg_temp.check((select count(*) from public.messages) = 0, 'other helper cannot read the chat');
+reset role;
+\echo 'Chat scenarios passed.'

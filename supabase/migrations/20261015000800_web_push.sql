@@ -1,7 +1,11 @@
 -- Tidyo · web push for notifications
 -- VAPID keys live in Supabase Vault (names: vapid_public, vapid_private, vapid_subject), never in the repo.
 
-create extension if not exists pg_net with schema extensions;
+do $$ begin
+  if exists (select 1 from pg_available_extensions where name = 'pg_net') then
+    create extension if not exists pg_net with schema extensions;
+  end if;
+end $$;
 
 alter table public.notifications add column if not exists pushed_at timestamptz;
 

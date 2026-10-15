@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useApp } from '../lib/session';
 import { Confirm, Field, Icon, LoadingList, Sheet, StatusBadge, Wordmark } from '../components/ui';
@@ -100,6 +100,7 @@ export default function Portal() {
             <p className="hint" style={{ margin: 0 }}>{t('pt.payHint')}</p>
           </section>
         )}
+        <Link className="btn btn-secondary" to="/mensagens"><Icon name="chat" size={18} />{t('ch.title')}</Link>
         <LangPicker />
       </main>
       {open && <VisitSheet job={open} onClose={() => setOpen(null)} onRated={() => { setOpen(null); load(); }} />}

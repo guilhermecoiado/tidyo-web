@@ -13,3 +13,10 @@ grant all on storage.objects to authenticated;
 alter default privileges in schema public grant all on tables to anon, authenticated, service_role;
 alter default privileges in schema public grant all on sequences to anon, authenticated, service_role;
 alter default privileges in schema public grant execute on functions to anon, authenticated, service_role;
+
+-- stand-ins for Vault and pg_net
+create schema if not exists vault;
+create table if not exists vault.decrypted_secrets (name text, decrypted_secret text);
+create schema if not exists net;
+create or replace function net.http_post(url text, body jsonb, headers jsonb, timeout_milliseconds integer default 5000)
+returns bigint language sql as $$ select 0::bigint $$;

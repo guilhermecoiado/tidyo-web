@@ -552,6 +552,38 @@ const D: Dict = {
   'push.off': ['Avisos desligados neste celular', 'Notifications off for this phone', 'Avisos apagados en este teléfono'],
   'push.denied': ['Não foi possível ativar. Permita os avisos quando o navegador perguntar.', 'Couldn’t turn on. Allow notifications when the browser asks.', 'No se pudo activar. Permite los avisos cuando el navegador pregunte.'],
 
+  // chat & routes
+  'ch.title': ['Mensagens', 'Messages', 'Mensajes'],
+  'ch.new': ['Nova conversa', 'New chat', 'Nueva conversación'],
+  'ch.newShort': ['Nova', 'New', 'Nueva'],
+  'ch.none': ['Nenhuma conversa ainda.', 'No conversations yet.', 'Aún no hay conversaciones.'],
+  'ch.noContacts': ['Ninguém disponível para conversar ainda.', 'No one available to chat yet.', 'Aún no hay nadie para conversar.'],
+  'ch.start': ['Escreva no seu idioma. A outra pessoa lê no dela.', 'Write in your language. They read it in theirs.', 'Escribe en tu idioma. La otra persona lo lee en el suyo.'],
+  'ch.placeholder': ['Escreva uma mensagem', 'Write a message', 'Escribe un mensaje'],
+  'ch.translatedFrom': ['Traduzido do {lang} · ver original', 'Translated from {lang} · see original', 'Traducido del {lang} · ver original'],
+  'ch.showTranslation': ['Ver tradução', 'Show translation', 'Ver traducción'],
+  'ch.talkOwner': ['Falar com a dona', 'Message the owner', 'Hablar con la dueña'],
+  'nt.message': ['Nova mensagem de {who}', 'New message from {who}', 'Nuevo mensaje de {who}'],
+  'rt.title': ['Rotas', 'Routes', 'Rutas'],
+  'rt.short': ['Rotas', 'Routes', 'Rutas'],
+  'rt.missing': ['{n} endereço(s) ainda sem localização no mapa.', '{n} address(es) not on the map yet.', '{n} dirección(es) aún sin ubicación en el mapa.'],
+  'rt.locate': ['Localizar', 'Locate', 'Ubicar'],
+  'rt.noKey': ['O mapa ainda não está configurado.', 'Maps are not set up yet.', 'El mapa aún no está configurado.'],
+  'rt.current': ['Ordem atual', 'Current order', 'Orden actual'],
+  'rt.optimized': ['Com o Tidy', 'With Tidy', 'Con Tidy'],
+  'rt.saves': ['{n} min a menos no carro', '{n} fewer minutes driving', '{n} min menos manejando'],
+  'rt.alreadyBest': ['Já é a melhor ordem', 'Already the best order', 'Ya es el mejor orden'],
+  'rt.noOrigin': ['Sem ponto de partida da helper: a rota começa na primeira casa. Defina em Mais → Equipe.', 'No starting point for this helper: the route starts at the first house. Set it in More → Team.', 'Sin punto de partida: la ruta empieza en la primera casa. Defínelo en Más → Equipo.'],
+  'rt.optimize': ['Otimizar ordem', 'Optimize order', 'Optimizar orden'],
+  'rt.apply': ['Aplicar rota', 'Apply route', 'Aplicar ruta'],
+  'rt.applyAsk': ['Aplicar esta ordem? A helper vê as casas nessa sequência.', 'Apply this order? The helper will see the houses in this sequence.', '¿Aplicar este orden? La ayudante verá las casas en esta secuencia.'],
+  'rt.applied': ['Rota aplicada', 'Route applied', 'Ruta aplicada'],
+  'rt.openMaps': ['Abrir a rota no Google Maps', 'Open route in Google Maps', 'Abrir ruta en Google Maps'],
+  'rt.openFull': ['Abrir a rota do dia', 'Open today’s route', 'Abrir la ruta del día'],
+  'rt.timesHint': ['Tempos estimados pela distância. O horário de cada visita não muda.', 'Times are estimated from distance. Visit times stay the same.', 'Tiempos estimados por distancia. El horario de cada visita no cambia.'],
+  'team.origin': ['Ponto de partida', 'Starting point', 'Punto de partida'],
+  'team.originHint': ['Endereço de onde a helper sai de manhã. Usado para montar a rota.', 'Where the helper leaves from in the morning. Used to plan the route.', 'Desde dónde sale la ayudante en la mañana. Se usa para la ruta.'],
+
 };
 
 const idx: Record<Lang, number> = { 'pt-BR': 0, en: 1, es: 2 };

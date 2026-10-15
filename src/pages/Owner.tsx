@@ -124,6 +124,7 @@ export function Home() {
             <div className="small muted bold">{longDay(new Date(), lang)}</div>
             <h1 style={{ fontSize: 21 }}>{t('home.hello')}{first ? `, ${first}` : ''}</h1>
           </div>
+          <Link to="/mensagens" className="icon-btn" aria-label={t('ch.title')}><Icon name="chat" size={20} /></Link>
           <Bell />
           <button className="icon-btn dark" onClick={() => setTidy(true)} aria-label={`Tidy · ${insights.length}`}>
             <Sparkle size={18} />
@@ -222,6 +223,7 @@ export function Schedule() {
       <main className="page">
         <div className="topbar">
           <h1 className="grow">{t('nav.schedule')}</h1>
+          <Link className="btn btn-secondary" style={{ minHeight: 44 }} to="/app/rotas"><Icon name="route" size={18} />{t('rt.short')}</Link>
           <button className="btn btn-primary" style={{ minHeight: 44 }} onClick={() => setNewJob(true)}><Icon name="plus" size={18} />{t('home.newJob')}</button>
         </div>
         <div className="row">
@@ -363,6 +365,14 @@ export function More() {
   const { members, reload } = useOwnerData();
   const [invite, setInvite] = useState(false);
   const [askOut, setAskOut] = useState(false);
+  const [originFor, setOriginFor] = useState<Member | null>(null);
+  const [originAddr, setOriginAddr] = useState('');
+  const saveOrigin = async () => {
+    if (!originFor) return;
+    const { data, error } = await supabase.functions.invoke('geocode', { body: { table: 'memberships', ids: [originFor.id], address: originAddr } });
+    if (error || data?.error || !data?.results?.[0]?.ok) toast(data?.error === 'maps_not_configured' ? t('rt.noKey') : t('c.error'));
+    else { toast(t('c.saved')); setOriginFor(null); }
+  };
   const isOwner = membership?.role === 'owner';
   const toggle = async (field: 'allow_push_team' | 'allow_push_clients') => {
     if (!company) return;
@@ -393,6 +403,7 @@ export function More() {
                 <span style={{ width: 38, height: 38, borderRadius: 38, background: 'var(--brand-dark)', color: '#5FD4C1', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, flex: 'none' }}>{m.display_name.slice(0, 1).toUpperCase()}</span>
                 <span className="body"><span className="title">{m.display_name}</span><span className="small muted">{roleLabel(m.role)} · {LANG_LABEL[m.language as Lang]}</span></span>
                 <span className={`badge ${m.status === 'active' ? 'b-ok' : 'b-warn'}`}>{m.status === 'active' ? t('team.active') : t('team.invited')}</span>
+                {m.status === 'active' && <button className="icon-btn" aria-label={t('team.origin')} onClick={() => { setOriginFor(m); setOriginAddr(''); }}><Icon name="pin" size={18} /></button>}
               </div>
             ))}
           </div>
@@ -428,6 +439,13 @@ export function More() {
       </main>
       <OwnerNav />
       {invite && <InviteForm onClose={() => setInvite(false)} onSaved={reload} />}
+      {originFor && (
+        <Sheet title={`${t('team.origin')} · ${originFor.display_name}`} onClose={() => setOriginFor(null)}>
+          <span className="hint">{t('team.originHint')}</span>
+          <input className="input" value={originAddr} onChange={(e) => setOriginAddr(e.target.value)} placeholder="12 Elm St, Waterbury, CT 06702" aria-label={t('team.origin')} autoComplete="street-address" />
+          <button className="btn btn-primary" disabled={originAddr.trim().length < 6} onClick={saveOrigin}>{t('c.save')}</button>
+        </Sheet>
+      )}
       {askOut && <Confirm text={`${t('auth.signout')}?`} confirmLabel={t('auth.signout')} onCancel={() => setAskOut(false)}
         onConfirm={async () => { await supabase.auth.signOut(); window.location.replace('/'); }} />}
     </div>
