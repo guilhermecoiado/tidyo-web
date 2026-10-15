@@ -6,20 +6,21 @@ import Auth, { NewPassword } from './pages/Auth';
 import Onboarding, { AcceptInvite } from './pages/Onboarding';
 import { Billing, Clients, Home, More, Schedule } from './pages/Owner';
 import MyDay from './pages/MyDay';
+import Landing from './pages/Landing';
 
 function Gate({ need, children }: { need: 'staff' | 'member'; children: ReactNode }) {
   const { ready, session, membership, isStaff } = useApp();
   const loc = useLocation();
   if (!ready) return <FullLoader />;
-  if (!session) return <Navigate to="/" replace state={{ from: loc.pathname }} />;
+  if (!session) return <Navigate to="/entrar" replace state={{ from: loc.pathname }} />;
   if (need === 'staff' && !isStaff) return <Navigate to={membership ? '/dia' : '/comecar'} replace />;
   return <>{children}</>;
 }
 
-function Root() {
+function Root({ publicPage }: { publicPage: 'landing' | 'auth' }) {
   const { ready, session, membership, isStaff } = useApp();
   if (!ready) return <FullLoader />;
-  if (!session) return <Auth />;
+  if (!session) return publicPage === 'landing' ? <Landing /> : <Auth />;
   let invite = '';
   try { invite = sessionStorage.getItem('tidyo.invite') || ''; } catch { /* ignore */ }
   if (invite && !membership) return <Navigate to={`/convite?t=${encodeURIComponent(invite)}`} replace />;
@@ -32,8 +33,8 @@ function Routed() {
   if (!ready) return <FullLoader />;
   return (
     <Routes>
-      <Route path="/" element={<Root />} />
-      <Route path="/entrar" element={<Root />} />
+      <Route path="/" element={<Root publicPage="landing" />} />
+      <Route path="/entrar" element={<Root publicPage="auth" />} />
       <Route path="/nova-senha" element={<NewPassword />} />
       <Route path="/comecar" element={<Onboarding />} />
       <Route path="/convite" element={<AcceptInvite />} />
