@@ -1,0 +1,70 @@
+/* Tidyo design tokens — single source for the app, the portal and the site.
+   Matches the canvas screens: Bricolage Grotesque for display, Manrope for text. */
+:root {
+  /* brand */
+  --brand-dark: #0A3D35;
+  --brand-light: #D4F1E9;
+  --brand-accent: #12A38F;
+  --brand-mint: #5FD4C1;      /* on dark surfaces */
+  --action: #0B7C6E;          /* primary buttons, links */
+  --action-hover: #0A3D35;
+
+  /* surfaces and text */
+  --bg-app: #F4F7F6;
+  --bg-site: #F7FBFA;
+  --surface: #FFFFFF;
+  --surface-dark: #0F1F1C;    /* Tidy sheet */
+  --ink: #0F1F1C;
+  --ink-muted: #566965;
+  --line: #DFE7E5;
+  --line-strong: #B9C7C4;
+
+  /* status */
+  --ok-bg: #E3F1EE;      --ok-fg: #0B6B5F;
+  --warn-bg: #FDF0DC;    --warn-fg: #8A4B05;
+  --danger-bg: #FFF3EC;  --danger-fg: #B8400C;  --danger-strong: #D9480F;
+  --neutral-bg: #EEF1F0; --neutral-fg: #3E4F4C;
+
+  /* type */
+  --font-display: 'Bricolage Grotesque', system-ui, sans-serif;
+  --font-body: 'Manrope', 'Segoe UI', system-ui, sans-serif;
+  --text-xs: 12px; --text-sm: 13.5px; --text-md: 15px; --text-lg: 17px;
+  --title-sm: 18px; --title-md: 22px; --title-lg: 28px; --title-xl: 40px;
+
+  /* spacing (4px grid) and shape */
+  --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px; --space-5: 20px; --space-6: 24px; --space-8: 32px;
+  --radius-sm: 10px; --radius-md: 14px; --radius-lg: 18px; --radius-xl: 26px; --radius-pill: 999px;
+  --shadow-card: 0 1px 2px rgba(10, 61, 53, .05);
+  --shadow-float: 0 14px 30px rgba(10, 61, 53, .14);
+  --shadow-sheet: 0 -10px 40px rgba(6, 31, 27, .25);
+
+  /* touch and layout */
+  --tap-min: 44px;            /* every interactive element */
+  --tap-primary: 52px;        /* main action of a screen */
+  --gutter: 16px;
+  --bottom-nav: 64px;
+  --max-content: 560px;       /* app column on wide screens */
+  --scrim: rgba(6, 31, 27, .55);
+  --focus-ring: 0 0 0 3px rgba(18, 163, 143, .45);
+  --ease: cubic-bezier(.2, .8, .3, 1);
+}
+
+/* Scrollbars follow the palette everywhere. */
+* { scrollbar-width: thin; scrollbar-color: var(--line-strong) transparent; }
+*::-webkit-scrollbar { width: 6px; height: 6px; }
+*::-webkit-scrollbar-track { background: transparent; }
+*::-webkit-scrollbar-thumb { background: var(--line-strong); border-radius: 6px; }
+*::-webkit-scrollbar-thumb:hover { background: var(--action); }
+
+:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+
+/* Loading: skeleton shimmer and the sweeping logo. */
+.skeleton { background: linear-gradient(90deg, #E8EEEC 0%, #F3F7F6 50%, #E8EEEC 100%); background-size: 200% 100%; animation: tidy-shimmer 1.4s linear infinite; border-radius: var(--radius-sm); }
+@keyframes tidy-shimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+.tidy-sweep { transform-box: view-box; transform-origin: 32px 32px; transform: rotate(180deg); animation: tidy-sweep .9s ease-in-out infinite alternate; }
+@keyframes tidy-sweep { from { transform: rotate(180deg) translateX(-6px); } to { transform: rotate(180deg) translateX(6px); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton, .tidy-sweep { animation: none; }
+  * { scroll-behavior: auto !important; }
+}

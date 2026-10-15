@@ -1,0 +1,3 @@
+{ "name": "Tidyo", "short_name": "Tidyo", "start_url": "/", "display": "standalone",
+  "background_color": "#F4F7F6", "theme_color": "#0A3D35",
+  "icons": [{ "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }] }
