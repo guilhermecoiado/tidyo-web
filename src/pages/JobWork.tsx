@@ -4,8 +4,10 @@ import { supabase } from '../lib/supabase';
 import { useApp } from '../lib/session';
 import { Confirm, Field, Icon, LoadingList, StatusBadge } from '../components/ui';
 import { ChecklistView, PhotoStrip } from '../components/proof';
-import { getChecklist, getJobPhotos, uploadJobPhoto, type CheckItem, type Photo } from '../lib/photos';
+import { getChecklist, getJobPhotos, type CheckItem, type Photo } from '../lib/photos';
 import { time } from '../lib/format';
+import { cacheGet, cacheSet, perform, useOffline } from '../lib/offline';
+import { compressImage } from '../lib/photos';
 
 type HJob = { job_id: string; company_id: string; status: string; scheduled_start: string; scheduled_end: string; client_name: string; address_line1: string; city: string; access_instructions: string | null; pets: string | null; special_instructions: string | null; client_notes: string | null };
 
@@ -21,28 +23,39 @@ export default function JobWork() {
   const [ask, setAsk] = useState<'' | 'incomplete' | 'noAfter'>('');
   const [finishing, setFinishing] = useState(false);
 
+  const { online, pending } = useOffline();
+  const saveItems = (list: CheckItem[]) => { setItems(list); cacheSet(`checklist_${id}`, list); };
   const load = useCallback(async () => {
-    const { data } = await supabase.rpc('helper_jobs');
-    const j = ((data || []) as HJob[]).find((x) => x.job_id === id) || null;
+    const { data, error } = await supabase.rpc('helper_jobs');
+    const list = error ? cacheGet<HJob[]>('helper_jobs') || [] : (data || []) as HJob[];
+    const j = list.find((x) => x.job_id === id) || null;
     setJob(j);
     if (!j) return;
-    try { setItems(await getChecklist(id)); } catch (e) { toast(tErr((e as Error).message)); setItems([]); }
-    setPhotos(await getJobPhotos(id));
-  }, [id, toast, tErr]);
+    try { const c = await getChecklist(id); setItems(c); cacheSet(`checklist_${id}`, c); }
+    catch { setItems(cacheGet<CheckItem[]>(`checklist_${id}`) || []); }
+    try { setPhotos(await getJobPhotos(id)); } catch { /* offline: keep local previews */ }
+  }, [id]);
   useEffect(() => { load(); }, [load]);
 
   const toggle = async (it: CheckItem) => {
     if (job?.status !== 'in_progress') { toast(t('ck.startFirst')); return; }
     const done_at = it.done_at ? null : new Date().toISOString();
-    setItems((list) => list && list.map((x) => (x.id === it.id ? { ...x, done_at } : x)));
-    const { error } = await supabase.from('job_checklist_items').update({ done_at }).eq('id', it.id);
-    if (error) { toast(tErr(error.message)); load(); }
+    saveItems((items || []).map((x) => (x.id === it.id ? { ...x, done_at } : x)));
+    const r = await perform({ kind: 'update', table: 'job_checklist_items', id: it.id, patch: { done_at } });
+    if (r.error) { toast(tErr(r.error)); load(); }
   };
   const add = async (kind: 'before' | 'after', f: File) => {
     if (!job) return;
     setBusyKind(kind);
-    try { await uploadJobPhoto(job.company_id, job.job_id, membership?.id || null, kind, f); setPhotos(await getJobPhotos(id)); }
-    catch { toast(t('ck.photoFail')); }
+    try {
+      const blob = await compressImage(f);
+      const pid = crypto.randomUUID();
+      const path = `${job.company_id}/${job.job_id}/${pid}.jpg`;
+      const r = await perform({ kind: 'upload', bucket: 'job-photos', path, blob, table: 'job_photos',
+        row: { id: pid, job_id: job.job_id, company_id: job.company_id, kind, storage_path: path, uploaded_by: membership?.id || null } });
+      if (r.error) toast(t('ck.photoFail'));
+      else setPhotos((p) => [...p, { id: pid, kind, storage_path: path, taken_at: new Date().toISOString(), url: URL.createObjectURL(blob) }]);
+    } catch { toast(t('ck.photoFail')); }
     setBusyKind('');
   };
   const finish = async (force = false) => {
@@ -51,10 +64,12 @@ export default function JobWork() {
     if (!force && !photos.some((p) => p.kind === 'after')) { setAsk('noAfter'); return; }
     if (!force && open > 0) { setAsk('incomplete'); return; }
     setFinishing(true);
-    const { error } = await supabase.rpc('job_progress', { p_job: job.job_id, p_status: 'completed', p_note: note || null });
+    const r = await perform({ kind: 'rpc', fn: 'job_progress', args: { p_job: job.job_id, p_status: 'completed', p_note: note || null } });
     setFinishing(false);
-    if (error) { toast(tErr(error.message)); return; }
-    toast(t('ck.done'));
+    if (r.error) { toast(tErr(r.error)); return; }
+    const cached = cacheGet<HJob[]>('helper_jobs') || [];
+    cacheSet('helper_jobs', cached.map((x) => (x.job_id === job.job_id ? { ...x, status: 'completed' } : x)));
+    toast(r.queued ? t('off.saved') : t('ck.done'));
     nav('/dia');
   };
 
@@ -75,6 +90,11 @@ export default function JobWork() {
           </div>
           <StatusBadge status={job.status} />
         </div>
+        {(!online || pending > 0) && (
+          <div className="strip" role="status" style={online ? { background: 'var(--warn-bg)', borderColor: '#F3DDB8', color: 'var(--warn-fg)' } : undefined}>
+            <span className="grow">{!online ? t('off.offline') : t('off.syncing', { n: pending })}</span>
+          </div>
+        )}
         {(job.access_instructions || job.pets || job.special_instructions || job.client_notes) && (
           <div className="card stack" style={{ gap: 6 }}>
             {job.access_instructions && <div className="small"><b>{t('day.access')}:</b> {job.access_instructions}</div>}

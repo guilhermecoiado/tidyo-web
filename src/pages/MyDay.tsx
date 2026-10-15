@@ -4,7 +4,10 @@ import { supabase } from '../lib/supabase';
 import { useApp } from '../lib/session';
 import { Confirm, Field, Icon, LoadingList, Logo, Sheet, StatusBadge } from '../components/ui';
 import { Bell } from './Inbox';
-import { fmtHours, hoursBetween, startOfDay, time, toCents, longDay, addDays } from '../lib/format';
+import { cacheGet, cacheSet, perform, useOffline } from '../lib/offline';
+import { compressImage } from '../lib/photos';
+import { PushToggle } from '../components/PushToggle';
+import { fmtHours, hoursBetween, startOfDay, time, toCents, longDay, addDays, isoDate } from '../lib/format';
 
 type HJob = {
   job_id: string; company_id: string; status: string; scheduled_start: string; scheduled_end: string; client_notes: string | null;
@@ -25,15 +28,20 @@ export default function MyDay() {
   const [, tick] = useState(0);
   const nav = useNavigate();
 
+  const { online, pending } = useOffline();
   const load = useCallback(async () => {
     if (!membership) return;
     const today = startOfDay(new Date());
-    const { data } = await supabase.rpc('helper_jobs');
-    const all = (data || []) as HJob[];
+    // Offline: show the last copy of the day saved on this phone
+    const { data, error } = await supabase.rpc('helper_jobs');
+    let all = (data || []) as HJob[];
+    if (error) all = cacheGet<HJob[]>('helper_jobs') || [];
+    else cacheSet('helper_jobs', all);
     setJobs(all.filter((j) => new Date(j.scheduled_start) >= today && new Date(j.scheduled_start) < addDays(today, 1) && j.status !== 'canceled'));
-    const { data: te } = await supabase.from('time_entries').select('id, clock_in, clock_out')
+    const { data: te, error: e2 } = await supabase.from('time_entries').select('id, clock_in, clock_out')
       .eq('membership_id', membership.id).gte('clock_in', today.toISOString()).order('clock_in');
-    setEntries((te || []) as Entry[]);
+    if (e2) setEntries(cacheGet<Entry[]>(`time_${isoDate(today)}`) || []);
+    else { setEntries((te || []) as Entry[]); cacheSet(`time_${isoDate(today)}`, te || []); }
   }, [membership]);
   useEffect(() => { load(); }, [load]);
   useEffect(() => { const i = window.setInterval(() => tick((n) => n + 1), 60000); return () => window.clearInterval(i); }, []);
@@ -53,27 +61,44 @@ export default function MyDay() {
   const open = entries.find((e) => !e.clock_out);
   const hours = entries.reduce((s, e) => s + hoursBetween(e.clock_in, e.clock_out), 0);
 
+  const saveEntries = (list: Entry[]) => { setEntries(list); cacheSet(`time_${isoDate(startOfDay(new Date()))}`, list); };
   const clock = async () => {
+    const now = new Date().toISOString();
     if (open) {
-      const { error } = await supabase.from('time_entries').update({ clock_out: new Date().toISOString() }).eq('id', open.id);
-      if (error) toast(tErr(error.message));
+      const r = await perform({ kind: 'update', table: 'time_entries', id: open.id, patch: { clock_out: now } });
+      if (r.error) { toast(tErr(r.error)); return; }
+      saveEntries(entries.map((e) => (e.id === open.id ? { ...e, clock_out: now } : e)));
+      if (r.queued) toast(t('off.saved'));
     } else {
-      const { error } = await supabase.from('time_entries').insert({ company_id: membership.company_id, membership_id: membership.id, clock_in: new Date().toISOString() });
-      if (error) toast(tErr(error.message));
+      const id = crypto.randomUUID();
+      const r = await perform({ kind: 'insert', table: 'time_entries', row: { id, company_id: membership.company_id, membership_id: membership.id, clock_in: now, source: navigator.onLine ? 'app' : 'offline_sync' } });
+      if (r.error) { toast(tErr(r.error)); return; }
+      saveEntries([...entries, { id, clock_in: now, clock_out: null }]);
+      if (r.queued) toast(t('off.saved'));
     }
-    load();
+  };
+  const setJobStatus = (id: string, status: string) => {
+    setJobs((list) => {
+      const next = list && list.map((x) => (x.job_id === id ? { ...x, status } : x));
+      const cached = cacheGet<HJob[]>('helper_jobs') || [];
+      cacheSet('helper_jobs', cached.map((x) => (x.job_id === id ? { ...x, status } : x)));
+      return next;
+    });
   };
   const progress = async (job: HJob, status: string, n?: string) => {
-    const { error } = await supabase.rpc('job_progress', { p_job: job.job_id, p_status: status, p_note: n || null });
-    if (error) toast(tErr(error.message)); else { toast(t('c.saved')); load(); }
+    const r = await perform({ kind: 'rpc', fn: 'job_progress', args: { p_job: job.job_id, p_status: status, p_note: n || null } });
+    if (r.error) { toast(tErr(r.error)); return false; }
+    setJobStatus(job.job_id, status);
+    toast(r.queued ? t('off.saved') : t('c.saved'));
+    return true;
   };
   const startJob = async (j: HJob) => {
     const pos = await new Promise<GeolocationPosition | null>((res) => {
       if (!navigator.geolocation) return res(null);
       navigator.geolocation.getCurrentPosition(res, () => res(null), { enableHighAccuracy: true, timeout: 7000, maximumAge: 60000 });
     });
-    if (pos) await supabase.rpc('job_start_location', { p_job: j.job_id, p_lat: pos.coords.latitude, p_lng: pos.coords.longitude });
-    await progress(j, 'in_progress');
+    if (pos) await perform({ kind: 'rpc', fn: 'job_start_location', args: { p_job: j.job_id, p_lat: pos.coords.latitude, p_lng: pos.coords.longitude } });
+    return progress(j, 'in_progress');
   };
   const mapUrl = (j: HJob) => `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(`${j.address_line1}, ${j.city}, ${j.state} ${j.zip}`)}`;
 
@@ -92,6 +117,12 @@ export default function MyDay() {
             : <button className="icon-btn" aria-label={t('auth.signout')} onClick={() => setAskOut(true)}><Icon name="logout" size={18} /></button>}
         </div>
 
+        {(!online || pending > 0) && (
+          <div className="strip" role="status" style={online ? { background: 'var(--warn-bg)', borderColor: '#F3DDB8', color: 'var(--warn-fg)' } : undefined}>
+            <span style={{ width: 8, height: 8, borderRadius: 8, background: 'currentColor', flex: 'none' }} />
+            <span className="grow">{!online ? t('off.offline') : t('off.syncing', { n: pending })}</span>
+          </div>
+        )}
         <section className="card row" style={{ background: 'var(--brand-dark)', color: '#EAF5F2', borderColor: 'var(--brand-dark)' }}>
           <div className="grow">
             <div className="tiny bold" style={{ color: '#9DB5B0', textTransform: 'uppercase', letterSpacing: '.06em' }}>{t('day.hours')}</div>
@@ -116,13 +147,14 @@ export default function MyDay() {
             {j.pets && <div className="small"><b>{t('cl.pets')}:</b> {j.pets}</div>}
             {j.special_instructions && <div className="small"><b>{t('cl.special')}:</b> {j.special_instructions}</div>}
             {j.client_notes && <div className="card tight small" style={{ background: 'var(--warn-bg)', borderColor: '#F3DDB8' }}><b>{t('job.notesClient')}:</b> {j.client_notes}</div>}
-            {j.status === 'scheduled' && <button className="btn btn-primary" onClick={async () => { await startJob(j); nav(`/dia/servico/${j.job_id}`); }}>{t('day.start')}</button>}
-            {j.status !== 'scheduled' && <Link className={`btn ${j.status === 'in_progress' ? 'btn-primary' : 'btn-secondary'}`} to={`/dia/servico/${j.job_id}`}>{j.status === 'in_progress' ? t('ck.open') : t('ck.open')}</Link>}
+            {j.status === 'scheduled' && <button className="btn btn-primary" onClick={async () => { if (await startJob(j)) nav(`/dia/servico/${j.job_id}`); }}>{t('day.start')}</button>}
+            {j.status !== 'scheduled' && <Link className={`btn ${j.status === 'in_progress' ? 'btn-primary' : 'btn-secondary'}`} to={`/dia/servico/${j.job_id}`}>{t('ck.open')}</Link>}
             {j.status !== 'completed' && <button className="btn btn-ghost" onClick={() => setProblem(j)}><Icon name="alert" size={18} />{t('day.problem')}</button>}
           </section>
         ))}
 
         <button className="btn btn-secondary" onClick={() => setExpense(true)}><Icon name="receipt" size={18} />{t('day.expense')}</button>
+        <PushToggle />
         <Link className="btn btn-ghost" to="/ajuda"><Icon name="help" size={18} />{t('more.help')}</Link>
       </main>
 
@@ -150,18 +182,17 @@ function ExpenseForm({ companyId, membershipId, onClose }: { companyId: string; 
   const save = async (e: FormEvent) => {
     e.preventDefault();
     setBusy(true);
-    let receipt: string | null = null;
+    const row = { id: crypto.randomUUID(), company_id: companyId, membership_id: membershipId, category: cat, amount_cents: toCents(amount),
+      description: desc || null, receipt_path: null as string | null, reimbursable: true, status: 'pending' };
+    let r;
     if (file && session) {
-      const path = `${companyId}/${crypto.randomUUID()}.${(file.name.split('.').pop() || 'jpg').toLowerCase()}`;
-      const { error } = await supabase.storage.from('receipts').upload(path, file, { contentType: file.type });
-      if (!error) receipt = path;
+      const path = `${companyId}/${crypto.randomUUID()}.jpg`;
+      r = await perform({ kind: 'upload', bucket: 'receipts', path, blob: await compressImage(file), table: 'expenses', row: { ...row, receipt_path: path } });
+    } else {
+      r = await perform({ kind: 'insert', table: 'expenses', row });
     }
-    const { error } = await supabase.from('expenses').insert({
-      company_id: companyId, membership_id: membershipId, category: cat, amount_cents: toCents(amount),
-      description: desc || null, receipt_path: receipt, reimbursable: true, status: 'pending',
-    });
     setBusy(false);
-    if (error) toast(tErr(error.message)); else { toast(t('day.expenseSent')); onClose(); }
+    if (r.error) toast(tErr(r.error)); else { toast(r.queued ? t('off.saved') : t('day.expenseSent')); onClose(); }
   };
   return (
     <Sheet title={t('day.expense')} onClose={onClose}>
@@ -184,8 +215,8 @@ function ProblemForm({ job, membershipId, onClose }: { job: HJob; membershipId: 
   const [desc, setDesc] = useState('');
   const save = async (e: FormEvent) => {
     e.preventDefault();
-    const { error } = await supabase.from('job_issues').insert({ job_id: job.job_id, company_id: job.company_id, reported_by: membershipId, category: cat, description: desc || t(`day.${cat === 'no_access' ? 'noAccess' : cat === 'damage' ? 'damage' : cat === 'supplies' ? 'supplies' : 'otherIssue'}`) });
-    if (error) toast(tErr(error.message)); else { toast(t('day.problemSent')); onClose(); }
+    const r = await perform({ kind: 'insert', table: 'job_issues', row: { id: crypto.randomUUID(), job_id: job.job_id, company_id: job.company_id, reported_by: membershipId, category: cat, description: desc || t(`day.${cat === 'no_access' ? 'noAccess' : cat === 'damage' ? 'damage' : cat === 'supplies' ? 'supplies' : 'otherIssue'}`) } });
+    if (r.error) toast(tErr(r.error)); else { toast(r.queued ? t('off.saved') : t('day.problemSent')); onClose(); }
   };
   return (
     <Sheet title={t('day.problem')} onClose={onClose}>

@@ -538,6 +538,20 @@ const D: Dict = {
   'sec.closeBtn': ['Encerrar definitivamente', 'Close permanently', 'Cerrar definitivamente'],
   'nt.tidy_daily': ['Tidy revisou sua empresa: {total} item(ns) pedem atenção hoje', 'Tidy reviewed your business: {total} item(s) need attention today', 'Tidy revisó tu empresa: {total} punto(s) necesitan atención hoy'],
 
+  // offline & push
+  'off.offline': ['Sem sinal. Pode continuar: tudo fica salvo no celular e envia quando o sinal voltar.', 'No signal. Keep going: everything is saved on the phone and sent when the signal is back.', 'Sin señal. Sigue: todo se guarda en el teléfono y se envía cuando vuelva la señal.'],
+  'off.syncing': ['Enviando {n} registro(s) guardado(s)…', 'Sending {n} saved item(s)…', 'Enviando {n} registro(s) guardado(s)…'],
+  'off.saved': ['Salvo no celular. Envia quando o sinal voltar.', 'Saved on the phone. Sends when the signal is back.', 'Guardado en el teléfono. Se envía cuando vuelva la señal.'],
+  'push.title': ['Avisos no celular', 'Phone notifications', 'Avisos en el teléfono'],
+  'push.hint': ['Receba os avisos mesmo com o app fechado.', 'Get notifications even when the app is closed.', 'Recibe avisos aunque la app esté cerrada.'],
+  'push.install': ['No iPhone, primeiro adicione o Tidyo à tela inicial (Compartilhar → Adicionar à Tela de Início) e abra por lá.', 'On iPhone, first add Tidyo to your home screen (Share → Add to Home Screen) and open it from there.', 'En iPhone, primero agrega Tidyo a la pantalla de inicio (Compartir → Agregar a inicio) y ábrelo desde ahí.'],
+  'push.blocked': ['Os avisos estão bloqueados nas configurações do navegador para este site.', 'Notifications are blocked in your browser settings for this site.', 'Los avisos están bloqueados en la configuración del navegador para este sitio.'],
+  'push.turnOn': ['Ativar avisos neste celular', 'Turn on for this phone', 'Activar en este teléfono'],
+  'push.turnOff': ['Desligar neste celular', 'Turn off for this phone', 'Apagar en este teléfono'],
+  'push.on': ['Avisos ativados neste celular', 'Notifications on for this phone', 'Avisos activados en este teléfono'],
+  'push.off': ['Avisos desligados neste celular', 'Notifications off for this phone', 'Avisos apagados en este teléfono'],
+  'push.denied': ['Não foi possível ativar. Permita os avisos quando o navegador perguntar.', 'Couldn’t turn on. Allow notifications when the browser asks.', 'No se pudo activar. Permite los avisos cuando el navegador pregunte.'],
+
 };
 
 const idx: Record<Lang, number> = { 'pt-BR': 0, en: 1, es: 2 };

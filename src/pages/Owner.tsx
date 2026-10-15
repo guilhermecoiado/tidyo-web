@@ -12,6 +12,7 @@ import { getContracts } from './Contracts';
 import { Bell } from './Inbox';
 import { AdSlot } from './Admin';
 import { SecuritySection } from './Security';
+import { PushToggle } from '../components/PushToggle';
 
 function useOwnerData() {
   const { company } = useApp();
@@ -419,6 +420,7 @@ export function More() {
           <Link className="btn btn-secondary" to="/ajuda">{t('hp.newTicket')}</Link>
         </section>
 
+        <PushToggle />
         <SecuritySection />
         {isAdmin && <Link className="btn btn-secondary" to="/admin"><Icon name="building" size={18} />{t('ad.open')}</Link>}
         <button className="btn btn-secondary" onClick={() => setAskOut(true)}><Icon name="logout" size={18} />{t('auth.signout')}</button>
