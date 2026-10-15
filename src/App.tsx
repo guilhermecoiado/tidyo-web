@@ -8,6 +8,7 @@ import { Billing, Clients, Home, More, Schedule } from './pages/Owner';
 import MyDay from './pages/MyDay';
 import Inbox, { Help } from './pages/Inbox';
 import Admin from './pages/Admin';
+import { MfaPrompt } from './pages/Security';
 import Contracts from './pages/Contracts';
 import { Expenses, FinanceOverview, TeamPay } from './pages/Finance';
 import Landing from './pages/Landing';
@@ -44,8 +45,9 @@ function Root({ publicPage }: { publicPage: 'landing' | 'auth' }) {
 }
 
 function Routed() {
-  const { ready } = useApp();
+  const { ready, session, needsMfa, refresh } = useApp();
   if (!ready) return <FullLoader />;
+  if (session && needsMfa) return <MfaPrompt onDone={refresh} />;
   return (
     <Routes>
       <Route path="/" element={<Root publicPage="landing" />} />

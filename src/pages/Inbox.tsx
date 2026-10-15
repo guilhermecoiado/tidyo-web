@@ -54,6 +54,7 @@ export default function Inbox() {
       case 'job_rated': return t('nt.job_rated', { client: d.client || '', n: d.rating || '' }) + (d.comment ? ` — “${d.comment}”` : '');
       case 'job_assigned': return t('nt.job_assigned', { client: d.client || '', when: d.start ? new Date(d.start).toLocaleString(lang, { weekday: 'short', day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' }) : '' });
       case 'support_reply': return t('nt.support_reply');
+      case 'tidy_daily': return t('nt.tidy_daily', { total: d.total || 0 });
       case 'broadcast': return `${pick(d, lang, 'title')}${pick(d, lang, 'body') ? ` — ${pick(d, lang, 'body')}` : ''}`;
       default: return n.kind;
     }

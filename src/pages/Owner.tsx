@@ -11,6 +11,7 @@ import { FinanceTabs } from './Finance';
 import { getContracts } from './Contracts';
 import { Bell } from './Inbox';
 import { AdSlot } from './Admin';
+import { SecuritySection } from './Security';
 
 function useOwnerData() {
   const { company } = useApp();
@@ -418,6 +419,7 @@ export function More() {
           <Link className="btn btn-secondary" to="/ajuda">{t('hp.newTicket')}</Link>
         </section>
 
+        <SecuritySection />
         {isAdmin && <Link className="btn btn-secondary" to="/admin"><Icon name="building" size={18} />{t('ad.open')}</Link>}
         <button className="btn btn-secondary" onClick={() => setAskOut(true)}><Icon name="logout" size={18} />{t('auth.signout')}</button>
         <p className="tiny muted" style={{ textAlign: 'center', margin: 0 }}>Tidyo 0.1 · <Link to="/dia">{t('nav.myDay')}</Link></p>

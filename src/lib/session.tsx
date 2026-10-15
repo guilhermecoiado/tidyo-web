@@ -21,6 +21,7 @@ type Ctx = {
   sub: Subscription | null;
   portal: PortalClient | null;
   isAdmin: boolean;
+  needsMfa: boolean;
   lang: Lang;
   isStaff: boolean;
   setLang: (l: Lang) => void;
@@ -42,6 +43,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const [sub, setSub] = useState<Subscription | null>(null);
   const [portal, setPortal] = useState<PortalClient | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [needsMfa, setNeedsMfa] = useState(false);
   const [lang, setLangState] = useState<Lang>(detectLang());
   const [toastState, setToast] = useState<Toast>(null);
   const toastTimer = useRef<number>();
@@ -54,6 +56,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       supabase.from('memberships').select('id, company_id, role, status, display_name, language').eq('user_id', s.user.id).eq('status', 'active'),
     ]);
     setProfile(p as Profile | null);
+    const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+    setNeedsMfa(aal?.nextLevel === 'aal2' && aal?.currentLevel !== 'aal2');
     supabase.rpc('is_platform_admin').then(({ data }) => setIsAdmin(!!data));
     if (p?.language) { setLangState(p.language as Lang); try { localStorage.setItem('tidyo.lang', p.language); } catch { /* ignore */ } }
     const list = (ms || []) as Membership[];
@@ -103,10 +107,10 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const value = useMemo<Ctx>(() => ({
-    ready, session, profile, membership, company, sub, portal, isAdmin, lang,
+    ready, session, profile, membership, company, sub, portal, isAdmin, needsMfa, lang,
     isStaff: membership?.role === 'owner' || membership?.role === 'manager',
     setLang, t, tErr, refresh: async () => { const { data } = await supabase.auth.getSession(); await load(data.session); }, toast,
-  }), [ready, session, profile, membership, company, sub, portal, isAdmin, lang, setLang, t, tErr, load, toast]);
+  }), [ready, session, profile, membership, company, sub, portal, isAdmin, needsMfa, lang, setLang, t, tErr, load, toast]);
 
   return (
     <SessionCtx.Provider value={value}>

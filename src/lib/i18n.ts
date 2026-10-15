@@ -514,6 +514,30 @@ const D: Dict = {
   'ad.st.paused': ['Pausado', 'Paused', 'Pausado'],
   'ad.st.ended': ['Encerrado', 'Ended', 'Terminado'],
 
+  // security
+  'sec.title': ['Verificação em 2 etapas', 'Two-step verification', 'Verificación en 2 pasos'],
+  'sec.hint': ['Além da senha, pede um código do app autenticador (Google Authenticator, 1Password, Authy).', 'Besides your password, asks for a code from an authenticator app (Google Authenticator, 1Password, Authy).', 'Además de la contraseña, pide un código de una app autenticadora (Google Authenticator, 1Password, Authy).'],
+  'sec.enabled': ['Ativada', 'On', 'Activada'],
+  'sec.disabled': ['Desligada', 'Off', 'Apagada'],
+  'sec.turnOn': ['Ativar verificação em 2 etapas', 'Turn on two-step verification', 'Activar verificación en 2 pasos'],
+  'sec.turnOff': ['Desligar', 'Turn off', 'Apagar'],
+  'sec.on': ['Verificação em 2 etapas ativada', 'Two-step verification is on', 'Verificación en 2 pasos activada'],
+  'sec.off': ['Verificação em 2 etapas desligada', 'Two-step verification is off', 'Verificación en 2 pasos apagada'],
+  'sec.step1': ['Abra seu app autenticador e escaneie o QR code.', 'Open your authenticator app and scan the QR code.', 'Abre tu app autenticadora y escanea el código QR.'],
+  'sec.step2': ['Digite o código de 6 dígitos que aparecer.', 'Enter the 6-digit code it shows.', 'Escribe el código de 6 dígitos que aparece.'],
+  'sec.code': ['Código de 6 dígitos', '6-digit code', 'Código de 6 dígitos'],
+  'sec.badCode': ['Código incorreto ou expirado. Tente o próximo.', 'Wrong or expired code. Try the next one.', 'Código incorrecto o vencido. Prueba el siguiente.'],
+  'sec.prompt': ['Confirme que é você', 'Confirm it’s you', 'Confirma que eres tú'],
+  'sec.promptText': ['Digite o código do seu app autenticador.', 'Enter the code from your authenticator app.', 'Escribe el código de tu app autenticadora.'],
+  'sec.data': ['Seus dados', 'Your data', 'Tus datos'],
+  'sec.export': ['Exportar todos os dados (JSON)', 'Export all data (JSON)', 'Exportar todos los datos (JSON)'],
+  'sec.close': ['Encerrar a empresa no Tidyo', 'Close the business on Tidyo', 'Cerrar la empresa en Tidyo'],
+  'sec.closeText': ['A empresa sai do ar na hora para você, sua equipe e seus clientes. Os dados ficam guardados por 30 dias para você pedir uma cópia ao suporte, e depois são apagados. Exporte antes se quiser guardar.', 'The business goes offline right away for you, your team and your clients. Data is kept 30 days so you can ask support for a copy, then deleted. Export first if you want to keep it.', 'La empresa se desactiva de inmediato para ti, tu equipo y tus clientes. Los datos se guardan 30 días para pedir una copia a soporte y luego se borran. Exporta antes si quieres guardarlos.'],
+  'sec.typeLabel': ['Digite EXCLUIR para confirmar', 'Type DELETE to confirm', 'Escribe ELIMINAR para confirmar'],
+  'sec.typeIt': ['Digite a palavra exatamente como pedido.', 'Type the word exactly as asked.', 'Escribe la palabra exactamente como se pide.'],
+  'sec.closeBtn': ['Encerrar definitivamente', 'Close permanently', 'Cerrar definitivamente'],
+  'nt.tidy_daily': ['Tidy revisou sua empresa: {total} item(ns) pedem atenção hoje', 'Tidy reviewed your business: {total} item(s) need attention today', 'Tidy revisó tu empresa: {total} punto(s) necesitan atención hoy'],
+
 };
 
 const idx: Record<Lang, number> = { 'pt-BR': 0, en: 1, es: 2 };
