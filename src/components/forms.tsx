@@ -53,6 +53,8 @@ export function JobForm({ clients, members, onClose, onSaved, defaultDate }: {
 
     try {
       let recurrenceId: string | null = null;
+      const { data: ct } = await supabase.from('contracts').select('id').eq('property_id', propertyId).eq('status', 'active').limit(1);
+      const contractId: string | null = ct?.[0]?.id || null;
       if (step) {
         const { data: rec, error } = await supabase.from('recurrences').insert({
           company_id: company.id, client_id: clientId, property_id: propertyId,
@@ -63,7 +65,7 @@ export function JobForm({ clients, members, onClose, onSaved, defaultDate }: {
         recurrenceId = rec.id;
       }
       const { data: jobs, error } = await supabase.from('jobs').insert(slots.map(({ s, e }) => ({
-        company_id: company.id, client_id: clientId, property_id: propertyId, recurrence_id: recurrenceId,
+        company_id: company.id, client_id: clientId, property_id: propertyId, recurrence_id: recurrenceId, contract_id: contractId,
         scheduled_start: s.toISOString(), scheduled_end: e.toISOString(), price_cents: toCents(price),
         client_notes: clientNotes || null, internal_notes: internal || null,
       }))).select('id');
@@ -185,6 +187,11 @@ export function JobDetail({ job, members, onClose, onChanged }: { job: Job; memb
         <span className="muted small">{dayLabel(new Date(job.scheduled_start), lang)} · {time(job.scheduled_start, lang)}–{time(job.scheduled_end, lang)}</span>
       </div>
       <div className="card tight row"><Icon name="pin" size={18} /><span>{job.properties?.address_line1}, {job.properties?.city}</span></div>
+      {job.start_inside_geofence !== null && job.start_inside_geofence !== undefined && (
+        <span className={`badge ${job.start_inside_geofence ? 'b-ok' : 'b-danger'}`} style={{ alignSelf: 'flex-start' }}>
+          {job.start_inside_geofence ? t('geo.inside') : t('geo.outside', { m: job.start_distance_m ?? '?' })}
+        </span>
+      )}
       <div className="grid2">
         <div className="kpi"><div className="label">{t('job.price')}</div><div className="value num">{money(job.price_cents, lang)}</div></div>
         <div className="kpi"><div className="label">{t('job.helper')}</div><div className="bold" style={{ marginTop: 4 }}>{assigned?.display_name || t('c.unassigned')}</div></div>
@@ -303,6 +310,14 @@ export function ClientDetail({ client, onClose }: { client: Client; onClose: () 
       .then(({ data }) => setProfit(data as typeof profit));
   }, [client.id]);
   const p = client.properties[0];
+  const [hasGeo, setHasGeo] = useState(!!(p?.lat && p?.lng));
+  const setGeo = () => {
+    if (!p || !navigator.geolocation) { toast(t('geo.denied')); return; }
+    navigator.geolocation.getCurrentPosition(async (pos) => {
+      const { error } = await supabase.from('properties').update({ lat: pos.coords.latitude, lng: pos.coords.longitude }).eq('id', p.id);
+      if (error) toast(tErr(error.message)); else { setHasGeo(true); toast(t('geo.saved')); }
+    }, () => toast(t('geo.denied')), { enableHighAccuracy: true, timeout: 10000 });
+  };
   return (
     <Sheet title={client.name} onClose={onClose}>
       <div className="row wrap small muted">
@@ -317,6 +332,8 @@ export function ClientDetail({ client, onClose }: { client: Client; onClose: () 
           {p.access_instructions && <div className="small"><b>{t('day.access')}:</b> {p.access_instructions}</div>}
           {p.pets && <div className="small"><b>{t('cl.pets')}:</b> {p.pets}</div>}
           {p.special_instructions && <div className="small"><b>{t('cl.special')}:</b> {p.special_instructions}</div>}
+          {hasGeo ? <span className="row small bold" style={{ color: 'var(--ok-fg)' }}><Icon name="check" size={16} />{t('geo.has')}</span>
+            : <><button className="btn btn-ghost" style={{ alignSelf: 'flex-start', paddingLeft: 0 }} onClick={setGeo}><Icon name="pin" size={16} />{t('geo.set')}</button><span className="hint">{t('geo.setHint')}</span></>}
         </div>
       )}
       <div className="stack" style={{ gap: 8 }}>

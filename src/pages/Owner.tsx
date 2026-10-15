@@ -8,6 +8,7 @@ import { findConflicts, getClients, getInvoicedJobIds, getInvoices, getJobs, get
 import { addDays, dayLabel, longDay, money, startOfDay, time } from '../lib/format';
 import { LANG_LABEL, type Lang } from '../lib/i18n';
 import { FinanceTabs } from './Finance';
+import { getContracts } from './Contracts';
 
 function useOwnerData() {
   const { company } = useApp();
@@ -48,6 +49,7 @@ export function Home() {
   const [soon, setSoon] = useState<Job[]>([]);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [uninvoiced, setUninvoiced] = useState(0);
+  const [extra, setExtra] = useState<{ renewals: { name: string; n: number }[]; stale: { name: string; n: number }[]; outside: number; pendingExp: number }>({ renewals: [], stale: [], outside: 0, pendingExp: 0 });
   const [open, setOpen] = useState<Job | null>(null);
   const [newJob, setNewJob] = useState(false);
   const [newClient, setNewClient] = useState(false);
@@ -66,6 +68,20 @@ export function Home() {
     ]);
     setJobs(j); setSoon(s); setInvoices(inv);
     setUninvoiced(recent.filter((x) => x.status === 'completed' && x.price_cents > 0 && !invoiced.has(x.id)).length);
+    const week = addDays(today, -7);
+    const [cts, exp] = await Promise.all([
+      company.mode !== 'residential' ? getContracts(company.id) : Promise.resolve([]),
+      supabase.from('expenses').select('id', { count: 'exact', head: true }).eq('company_id', company.id).eq('status', 'pending'),
+    ]);
+    const active = cts.filter((c) => c.status === 'active');
+    const days = (d: string | null) => (d ? Math.ceil((new Date(d + 'T12:00').getTime() - Date.now()) / 864e5) : 999);
+    const months = (d: string | null) => (d ? Math.floor((Date.now() - new Date(d + 'T12:00').getTime()) / (30.44 * 864e5)) : 0);
+    setExtra({
+      renewals: active.filter((c) => days(c.renews_on) <= 30).map((c) => ({ name: c.clients?.name || '', n: Math.max(0, days(c.renews_on)) })),
+      stale: active.filter((c) => months(c.last_adjusted_on || c.starts_on) >= 12).map((c) => ({ name: c.clients?.name || '', n: months(c.last_adjusted_on || c.starts_on) })),
+      outside: recent.filter((x) => x.start_inside_geofence === false && new Date(x.scheduled_start) >= week).length,
+      pendingExp: exp.count || 0,
+    });
   }, [company]);
   useEffect(() => { load(); }, [load]);
 
@@ -79,6 +95,10 @@ export function Home() {
     ...conflicts.slice(0, 3).map((c) => ({ tag: t('tidy.conflict'), bg: '#5A2416', fg: '#FFB59C', text: t('tidy.conflictText', { name: nameOf(c.memberId), time: time(c.b.scheduled_start, lang) }), go: () => { setTidy(false); setOpen(c.b); } })),
     ...(unassigned.length ? [{ tag: t('tidy.unassigned'), bg: '#4A3510', fg: '#F5C66B', text: t('tidy.unassignedText', { n: unassigned.length }), go: () => { setTidy(false); setOpen(unassigned[0]); } }] : []),
     ...(overdue.length ? [{ tag: t('tidy.overdue'), bg: '#4A1A1A', fg: '#FF9C9C', text: t('tidy.overdueText', { n: overdue.length, amount: money(overdue.reduce((s, i) => s + i.total_cents - i.paid_cents, 0), lang) }), go: () => nav('/app/cobrancas') }] : []),
+    ...extra.renewals.map((r) => ({ tag: t('tidy.renewal'), bg: '#4A3510', fg: '#F5C66B', text: t('tidy.renewalText', { name: r.name, n: r.n }), go: () => nav('/app/contratos') })),
+    ...extra.stale.map((r) => ({ tag: t('tidy.renewal'), bg: '#4A3510', fg: '#F5C66B', text: t('tidy.adjustText', { name: r.name, n: r.n }), go: () => nav('/app/contratos') })),
+    ...(extra.outside ? [{ tag: 'GPS', bg: '#5A2416', fg: '#FFB59C', text: t('tidy.geoText', { n: extra.outside }), go: () => nav('/app/agenda') }] : []),
+    ...(extra.pendingExp ? [{ tag: t('tidy.review'), bg: '#173F3A', fg: '#5FD4C1', text: t('tidy.reviewText', { n: extra.pendingExp }), go: () => nav('/app/financas/despesas') }] : []),
     ...(uninvoiced ? [{ tag: t('tidy.uninvoiced'), bg: '#173F3A', fg: '#5FD4C1', text: t('tidy.uninvoicedText', { n: uninvoiced }), go: () => nav('/app/agenda') }] : []),
   ];
 
@@ -353,6 +373,11 @@ export function More() {
             <div className="small muted">{t('more.plan')}: {sub?.plan === 'essencial' ? 'Essencial' : sub?.plan === 'comercial' ? 'Comercial' : 'Pro'}{sub?.has_commercial && sub.plan !== 'comercial' ? ' + Comercial' : ''} · {sub?.status === 'trialing' ? `${t('home.trial')} ${new Date(sub.trial_ends_at).toLocaleDateString(lang, { day: 'numeric', month: 'short' })}` : sub?.status}</div></div></div>
         </section>
 
+        {company?.mode !== 'residential' && (
+          <Link to="/app/contratos" className="item" style={{ textDecoration: 'none', color: 'inherit' }}>
+            <Icon name="building" /><span className="body"><span className="title">{t('ct.title')}</span><span className="small muted">{t('ins.title')}</span></span><Icon name="chevR" size={18} />
+          </Link>
+        )}
         <section className="stack" aria-labelledby="team-h">
           <div className="row"><h2 id="team-h" style={{ flex: 1 }}>{t('more.team')}</h2>
             <button className="btn btn-ghost" onClick={() => setInvite(true)}><Icon name="plus" size={18} />{t('team.invite')}</button></div>

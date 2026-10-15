@@ -66,6 +66,14 @@ export default function MyDay() {
     const { error } = await supabase.rpc('job_progress', { p_job: job.job_id, p_status: status, p_note: n || null });
     if (error) toast(tErr(error.message)); else { toast(t('c.saved')); load(); }
   };
+  const startJob = async (j: HJob) => {
+    const pos = await new Promise<GeolocationPosition | null>((res) => {
+      if (!navigator.geolocation) return res(null);
+      navigator.geolocation.getCurrentPosition(res, () => res(null), { enableHighAccuracy: true, timeout: 7000, maximumAge: 60000 });
+    });
+    if (pos) await supabase.rpc('job_start_location', { p_job: j.job_id, p_lat: pos.coords.latitude, p_lng: pos.coords.longitude });
+    await progress(j, 'in_progress');
+  };
   const mapUrl = (j: HJob) => `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(`${j.address_line1}, ${j.city}, ${j.state} ${j.zip}`)}`;
 
   return (
@@ -106,7 +114,7 @@ export default function MyDay() {
             {j.pets && <div className="small"><b>{t('cl.pets')}:</b> {j.pets}</div>}
             {j.special_instructions && <div className="small"><b>{t('cl.special')}:</b> {j.special_instructions}</div>}
             {j.client_notes && <div className="card tight small" style={{ background: 'var(--warn-bg)', borderColor: '#F3DDB8' }}><b>{t('job.notesClient')}:</b> {j.client_notes}</div>}
-            {j.status === 'scheduled' && <button className="btn btn-primary" onClick={async () => { await progress(j, 'in_progress'); nav(`/dia/servico/${j.job_id}`); }}>{t('day.start')}</button>}
+            {j.status === 'scheduled' && <button className="btn btn-primary" onClick={async () => { await startJob(j); nav(`/dia/servico/${j.job_id}`); }}>{t('day.start')}</button>}
             {j.status !== 'scheduled' && <Link className={`btn ${j.status === 'in_progress' ? 'btn-primary' : 'btn-secondary'}`} to={`/dia/servico/${j.job_id}`}>{j.status === 'in_progress' ? t('ck.open') : t('ck.open')}</Link>}
             {j.status !== 'completed' && <button className="btn btn-ghost" onClick={() => setProblem(j)}><Icon name="alert" size={18} />{t('day.problem')}</button>}
           </section>

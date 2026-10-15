@@ -6,6 +6,7 @@ import Auth, { NewPassword } from './pages/Auth';
 import Onboarding, { AcceptInvite } from './pages/Onboarding';
 import { Billing, Clients, Home, More, Schedule } from './pages/Owner';
 import MyDay from './pages/MyDay';
+import Contracts from './pages/Contracts';
 import { Expenses, FinanceOverview, TeamPay } from './pages/Finance';
 import Landing from './pages/Landing';
 import JobWork from './pages/JobWork';
@@ -58,6 +59,7 @@ function Routed() {
       <Route path="/app/financas" element={<Gate need="staff"><FinanceOverview /></Gate>} />
       <Route path="/app/financas/despesas" element={<Gate need="staff"><Expenses /></Gate>} />
       <Route path="/app/financas/equipe" element={<Gate need="staff"><TeamPay /></Gate>} />
+      <Route path="/app/contratos" element={<Gate need="staff"><Contracts /></Gate>} />
       <Route path="/app/mais" element={<Gate need="staff"><More /></Gate>} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

@@ -17,6 +17,7 @@ export default function Portal() {
   const { t, lang, portal } = useApp();
   const [jobs, setJobs] = useState<PJob[] | null>(null);
   const [invoices, setInvoices] = useState<PInv[]>([]);
+  const [insp, setInsp] = useState<{ id: string; score: number | null; inspected_at: string; items: { area: string; ok: boolean; note?: string }[] }[]>([]);
   const [open, setOpen] = useState<PJob | null>(null);
   const [askOut, setAskOut] = useState(false);
 
@@ -27,6 +28,8 @@ export default function Portal() {
     ]);
     setJobs((j || []) as PJob[]);
     setInvoices((inv || []) as PInv[]);
+    const { data: ins } = await supabase.from('inspections').select('id, score, inspected_at, items').order('inspected_at', { ascending: false }).limit(10);
+    setInsp((ins || []) as typeof insp);
   }, []);
   useEffect(() => { load(); }, [load]);
 
@@ -71,6 +74,17 @@ export default function Portal() {
           ))}
         </section>
 
+        {insp.length > 0 && (
+          <section className="stack">
+            <h2>{t('pt.inspections')}</h2>
+            {insp.map((i) => (
+              <div key={i.id} className="card tight stack" style={{ gap: 4 }}>
+                <div className="row"><span className="grow bold">{new Date(i.inspected_at).toLocaleDateString(lang, { day: 'numeric', month: 'short' })}</span><b className="num">{i.score}</b></div>
+                {i.items.filter((x) => !x.ok).map((x) => <span key={x.area} className="small">• {t(x.area)}{x.note ? `: ${x.note}` : ''}</span>)}
+              </div>
+            ))}
+          </section>
+        )}
         {invoices.length > 0 && (
           <section className="stack">
             <h2>{t('pt.invoices')}</h2>

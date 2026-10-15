@@ -1,12 +1,13 @@
 import { supabase } from './supabase';
 
 export type Member = { id: string; display_name: string; role: 'owner' | 'manager' | 'helper'; status: string; language: string; user_id: string | null };
-export type Property = { id: string; client_id: string; label: string; address_line1: string; city: string; state: string; zip: string; access_instructions: string | null; pets: string | null; special_instructions: string | null };
+export type Property = { id: string; client_id: string; label: string; address_line1: string; city: string; state: string; zip: string; lat: number | null; lng: number | null; access_instructions: string | null; pets: string | null; special_instructions: string | null };
 export type Client = { id: string; kind: 'residential' | 'commercial'; name: string; portal_user_id: string | null; email: string | null; phone: string | null; language: string; no_translate: boolean; notes: string | null; properties: Property[] };
 export type Job = {
   id: string; client_id: string; property_id: string; status: string; scheduled_start: string; scheduled_end: string;
   price_cents: number; client_notes: string | null; internal_notes: string | null; completion_note: string | null; recurrence_id: string | null;
   rating_status: string; rating: number | null; rating_comment: string | null;
+  contract_id: string | null; start_distance_m: number | null; start_inside_geofence: boolean | null;
   clients: { name: string } | null; properties: { address_line1: string; city: string } | null; job_assignments: { membership_id: string }[];
 };
 export type Invoice = {
@@ -14,7 +15,7 @@ export type Invoice = {
   client_id: string; clients: { name: string } | null;
 };
 
-const JOB_SELECT = 'id, client_id, property_id, status, scheduled_start, scheduled_end, price_cents, client_notes, internal_notes, completion_note, recurrence_id, rating_status, rating, rating_comment, clients(name), properties(address_line1, city), job_assignments(membership_id)';
+const JOB_SELECT = 'id, client_id, property_id, status, scheduled_start, scheduled_end, price_cents, client_notes, internal_notes, completion_note, recurrence_id, rating_status, rating, rating_comment, contract_id, start_distance_m, start_inside_geofence, clients(name), properties(address_line1, city), job_assignments(membership_id)';
 
 export async function getJobs(companyId: string, from: Date, to: Date) {
   const { data, error } = await supabase.from('jobs').select(JOB_SELECT)
@@ -37,7 +38,7 @@ export async function getMembers(companyId: string) {
 
 export async function getClients(companyId: string) {
   const { data, error } = await supabase.from('clients')
-    .select('id, kind, name, email, phone, language, no_translate, notes, portal_user_id, properties(id, client_id, label, address_line1, city, state, zip, access_instructions, pets, special_instructions)')
+    .select('id, kind, name, email, phone, language, no_translate, notes, portal_user_id, properties(id, client_id, label, address_line1, city, state, zip, lat, lng, access_instructions, pets, special_instructions)')
     .eq('company_id', companyId).is('archived_at', null).order('name');
   if (error) throw error;
   return (data || []) as unknown as Client[];
