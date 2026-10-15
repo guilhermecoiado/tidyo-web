@@ -32,3 +32,15 @@ select pg_temp.check((select count(*) from public.portal_me()) = 1, 'client join
 select pg_temp.expect_error($$select public.accept_portal_invite('portal-1')$$, 'portal link works once');
 reset role;
 \echo 'Checklist and portal scenarios passed.'
+
+-- Notifications and admin
+reset role;
+set role authenticated;
+select pg_temp.as_user('00000000-0000-0000-0000-00000000000a');
+select pg_temp.check((select count(*) from public.notifications where kind = 'job_completed') >= 1, 'owner notified when a job is completed');
+select pg_temp.check((select count(*) from public.notifications where kind = 'expense_pending') >= 1, 'owner notified of a pending expense');
+select public.mark_notifications_read();
+select pg_temp.check((select count(*) from public.notifications where read_at is null) = 0, 'mark all as read');
+select pg_temp.check((select count(*) from public.admin_companies()) = 0, 'non-admin sees no subscribers');
+reset role;
+\echo 'Notification scenarios passed.'

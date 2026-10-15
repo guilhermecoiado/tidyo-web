@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useApp } from '../lib/session';
 import { Confirm, Field, Icon, LoadingList, Logo, Sheet, StatusBadge } from '../components/ui';
+import { Bell } from './Inbox';
 import { fmtHours, hoursBetween, startOfDay, time, toCents, longDay, addDays } from '../lib/format';
 
 type HJob = {
@@ -85,6 +86,7 @@ export default function MyDay() {
             <div className="small muted bold">{longDay(new Date(), lang)}</div>
             <h1 style={{ fontSize: 21 }}>{t('day.title')}</h1>
           </div>
+          <Bell />
           {isStaff
             ? <Link className="btn btn-secondary" style={{ minHeight: 44 }} to="/app">{t('nav.today')}</Link>
             : <button className="icon-btn" aria-label={t('auth.signout')} onClick={() => setAskOut(true)}><Icon name="logout" size={18} /></button>}
@@ -121,6 +123,7 @@ export default function MyDay() {
         ))}
 
         <button className="btn btn-secondary" onClick={() => setExpense(true)}><Icon name="receipt" size={18} />{t('day.expense')}</button>
+        <Link className="btn btn-ghost" to="/ajuda"><Icon name="help" size={18} />{t('more.help')}</Link>
       </main>
 
       {finish && (

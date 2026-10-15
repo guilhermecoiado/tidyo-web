@@ -6,17 +6,21 @@ import Auth, { NewPassword } from './pages/Auth';
 import Onboarding, { AcceptInvite } from './pages/Onboarding';
 import { Billing, Clients, Home, More, Schedule } from './pages/Owner';
 import MyDay from './pages/MyDay';
+import Inbox, { Help } from './pages/Inbox';
+import Admin from './pages/Admin';
 import Contracts from './pages/Contracts';
 import { Expenses, FinanceOverview, TeamPay } from './pages/Finance';
 import Landing from './pages/Landing';
 import JobWork from './pages/JobWork';
 import Portal, { PortalInvite } from './pages/Portal';
 
-function Gate({ need, children }: { need: 'staff' | 'member' | 'portal'; children: ReactNode }) {
-  const { ready, session, membership, isStaff, portal } = useApp();
+function Gate({ need, children }: { need: 'staff' | 'member' | 'portal' | 'any' | 'admin'; children: ReactNode }) {
+  const { ready, session, membership, isStaff, portal, isAdmin } = useApp();
   const loc = useLocation();
   if (!ready) return <FullLoader />;
   if (!session) return <Navigate to="/entrar" replace state={{ from: loc.pathname }} />;
+  if (need === 'any') return <>{children}</>;
+  if (need === 'admin') return isAdmin ? <>{children}</> : <Navigate to="/" replace />;
   if (need === 'portal') return portal ? <>{children}</> : <Navigate to="/" replace />;
   if (need === 'member' && !membership) return <Navigate to={portal ? '/portal' : '/comecar'} replace />;
   if (need === 'staff' && !isStaff) return <Navigate to={membership ? '/dia' : '/comecar'} replace />;
@@ -24,7 +28,7 @@ function Gate({ need, children }: { need: 'staff' | 'member' | 'portal'; childre
 }
 
 function Root({ publicPage }: { publicPage: 'landing' | 'auth' }) {
-  const { ready, session, membership, isStaff, portal } = useApp();
+  const { ready, session, membership, isStaff, portal, isAdmin } = useApp();
   if (!ready) return <FullLoader />;
   if (!session) return publicPage === 'landing' ? <Landing /> : <Auth />;
   let invite = '';
@@ -34,6 +38,7 @@ function Root({ publicPage }: { publicPage: 'landing' | 'auth' }) {
   try { portalInvite = sessionStorage.getItem('tidyo.portalInvite') || ''; } catch { /* ignore */ }
   if (portalInvite && !membership && !portal) return <Navigate to={`/portal/convite?t=${encodeURIComponent(portalInvite)}`} replace />;
   if (!membership && portal) return <Navigate to="/portal" replace />;
+  if (!membership && isAdmin) return <Navigate to="/admin" replace />;
   if (!membership) return <Navigate to="/comecar" replace />;
   return <Navigate to={isStaff ? '/app' : '/dia'} replace />;
 }
@@ -60,6 +65,9 @@ function Routed() {
       <Route path="/app/financas/despesas" element={<Gate need="staff"><Expenses /></Gate>} />
       <Route path="/app/financas/equipe" element={<Gate need="staff"><TeamPay /></Gate>} />
       <Route path="/app/contratos" element={<Gate need="staff"><Contracts /></Gate>} />
+      <Route path="/avisos" element={<Gate need="any"><Inbox /></Gate>} />
+      <Route path="/ajuda" element={<Gate need="any"><Help /></Gate>} />
+      <Route path="/admin" element={<Gate need="admin"><Admin /></Gate>} />
       <Route path="/app/mais" element={<Gate need="staff"><More /></Gate>} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

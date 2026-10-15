@@ -9,6 +9,8 @@ import { addDays, dayLabel, longDay, money, startOfDay, time } from '../lib/form
 import { LANG_LABEL, type Lang } from '../lib/i18n';
 import { FinanceTabs } from './Finance';
 import { getContracts } from './Contracts';
+import { Bell } from './Inbox';
+import { AdSlot } from './Admin';
 
 function useOwnerData() {
   const { company } = useApp();
@@ -120,6 +122,7 @@ export function Home() {
             <div className="small muted bold">{longDay(new Date(), lang)}</div>
             <h1 style={{ fontSize: 21 }}>{t('home.hello')}{first ? `, ${first}` : ''}</h1>
           </div>
+          <Bell />
           <button className="icon-btn dark" onClick={() => setTidy(true)} aria-label={`Tidy · ${insights.length}`}>
             <Sparkle size={18} />
             {insights.length > 0 && <span className="count">{insights.length}</span>}
@@ -132,6 +135,7 @@ export function Home() {
           </button>
         )}
 
+        <AdSlot />
         {sub?.status === 'trialing' && (
           <div className="small muted">{t('home.trial')} {new Date(sub.trial_ends_at).toLocaleDateString(lang, { day: 'numeric', month: 'short' })}</div>
         )}
@@ -353,7 +357,7 @@ export function Billing() {
 
 // ─────────────── Mais ───────────────
 export function More() {
-  const { t, lang, setLang, company, membership, sub, refresh, toast } = useApp();
+  const { t, lang, setLang, company, membership, sub, refresh, toast, isAdmin } = useApp();
   const { members, reload } = useOwnerData();
   const [invite, setInvite] = useState(false);
   const [askOut, setAskOut] = useState(false);
@@ -411,9 +415,10 @@ export function More() {
         <section className="card stack">
           <div className="row"><Icon name="help" /><span className="bold grow">{t('more.help')}</span></div>
           <span className="small muted">{t('more.helpText')}</span>
-          <a className="btn btn-secondary" href="https://wa.me/" target="_blank" rel="noreferrer">WhatsApp</a>
+          <Link className="btn btn-secondary" to="/ajuda">{t('hp.newTicket')}</Link>
         </section>
 
+        {isAdmin && <Link className="btn btn-secondary" to="/admin"><Icon name="building" size={18} />{t('ad.open')}</Link>}
         <button className="btn btn-secondary" onClick={() => setAskOut(true)}><Icon name="logout" size={18} />{t('auth.signout')}</button>
         <p className="tiny muted" style={{ textAlign: 'center', margin: 0 }}>Tidyo 0.1 · <Link to="/dia">{t('nav.myDay')}</Link></p>
       </main>

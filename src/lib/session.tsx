@@ -20,6 +20,7 @@ type Ctx = {
   company: Company | null;
   sub: Subscription | null;
   portal: PortalClient | null;
+  isAdmin: boolean;
   lang: Lang;
   isStaff: boolean;
   setLang: (l: Lang) => void;
@@ -40,18 +41,20 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const [company, setCompany] = useState<Company | null>(null);
   const [sub, setSub] = useState<Subscription | null>(null);
   const [portal, setPortal] = useState<PortalClient | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [lang, setLangState] = useState<Lang>(detectLang());
   const [toastState, setToast] = useState<Toast>(null);
   const toastTimer = useRef<number>();
 
   const load = useCallback(async (s: Session | null) => {
     setSession(s);
-    if (!s) { setProfile(null); setMembership(null); setCompany(null); setSub(null); setPortal(null); setReady(true); return; }
+    if (!s) { setProfile(null); setMembership(null); setCompany(null); setSub(null); setPortal(null); setIsAdmin(false); setReady(true); return; }
     const [{ data: p }, { data: ms }] = await Promise.all([
       supabase.from('profiles').select('id, full_name, language').eq('id', s.user.id).maybeSingle(),
       supabase.from('memberships').select('id, company_id, role, status, display_name, language').eq('user_id', s.user.id).eq('status', 'active'),
     ]);
     setProfile(p as Profile | null);
+    supabase.rpc('is_platform_admin').then(({ data }) => setIsAdmin(!!data));
     if (p?.language) { setLangState(p.language as Lang); try { localStorage.setItem('tidyo.lang', p.language); } catch { /* ignore */ } }
     const list = (ms || []) as Membership[];
     const m = list.find((x) => x.role !== 'helper') || list[0] || null;
@@ -100,10 +103,10 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const value = useMemo<Ctx>(() => ({
-    ready, session, profile, membership, company, sub, portal, lang,
+    ready, session, profile, membership, company, sub, portal, isAdmin, lang,
     isStaff: membership?.role === 'owner' || membership?.role === 'manager',
     setLang, t, tErr, refresh: async () => { const { data } = await supabase.auth.getSession(); await load(data.session); }, toast,
-  }), [ready, session, profile, membership, company, sub, portal, lang, setLang, t, tErr, load, toast]);
+  }), [ready, session, profile, membership, company, sub, portal, isAdmin, lang, setLang, t, tErr, load, toast]);
 
   return (
     <SessionCtx.Provider value={value}>
