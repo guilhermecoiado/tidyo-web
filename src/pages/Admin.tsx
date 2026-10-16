@@ -9,6 +9,7 @@ import { C, initials } from '../components/kit';
 import { mediaUrl } from '../components/Ad';
 import { SecuritySection } from './Security';
 import type { Lang } from '../lib/i18n';
+import { COMBO, perMonth } from '../lib/pricing';
 
 // ── data ──
 type Sub = { id: string; name: string; mode: string; created_at: string; state: string | null; language: Lang; plan: 'essencial' | 'pro' | 'comercial' | null; has_commercial: boolean | null; commercial_tier: number | null;
@@ -20,13 +21,13 @@ type Ad = { id: string; name: string; format: 'top_banner' | 'cta_card' | 'popup
   content: Record<string, { title?: string; cta?: string }>; cta_url: string | null; utm: Record<string, string>; targeting: { plans?: string[]; languages?: string[]; frequency?: string }; starts_at: string | null; ends_at: string | null; created_at: string };
 
 const TIER_PRICE: Record<number, number> = { 1: 49, 2: 99, 3: 179 };
-/** Monthly revenue of one subscriber (combo Pro + Comercial has 20% off; yearly = 10 months; admin discount on top) */
+/** Monthly revenue of one subscriber (combo Pro + Comercial has 20% off; yearly = whole-dollar price; admin discount on top) */
 export function mrrOf(s: Sub) {
   if (s.status !== 'active' || !s.plan) return 0;
   const com = s.plan === 'comercial' || s.has_commercial ? TIER_PRICE[s.commercial_tier || 1] || 0 : 0;
   let v = s.plan === 'comercial' ? com : (s.plan === 'essencial' ? 29 : 69) + com;
-  if (s.plan === 'pro' && s.has_commercial) v *= 0.8;
-  if (s.billing === 'year') v = (v * 10) / 12;
+  if (s.plan === 'pro' && s.has_commercial) v = (s.commercial_tier || 1) === 1 ? COMBO : Math.floor(v * 0.8);
+  if (s.billing === 'year') v = perMonth(v, true);
   return v * (1 - (s.discount_pct || 0) / 100);
 }
 const money = (v: number, d = 2) => `$${v.toLocaleString('en-US', { minimumFractionDigits: d, maximumFractionDigits: d })}`;

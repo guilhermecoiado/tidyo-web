@@ -5,10 +5,11 @@ import { supabase } from '../lib/supabase';
 import { useApp } from '../lib/session';
 import { Sheet } from '../components/ui';
 import { C, Head, OwnerBar, Segment, SheetActions, Svg, I } from '../components/kit';
+import { COMBO, perMonth } from '../lib/pricing';
 
 type PlanKey = 'essencial' | 'pro' | 'comercial' | 'combo';
-export const PLAN_PRICE: Record<PlanKey, number> = { essencial: 29, pro: 69, comercial: 49, combo: 94.4 };
-const price = (v: number, yearly: boolean) => `$${yearly ? (v * 10 / 12).toFixed(2) : Number.isInteger(v) ? v : v.toFixed(2)}`;
+export const PLAN_PRICE: Record<PlanKey, number> = { essencial: 29, pro: 69, comercial: 49, combo: COMBO };
+const price = (v: number, yearly: boolean) => `$${perMonth(v, yearly)}`;
 
 async function exportCsvZip(companyId: string, name: string) {
   const tables = ['clients', 'properties', 'jobs', 'invoices', 'invoice_lines', 'payments', 'expenses', 'time_entries', 'contracts', 'inspections'];

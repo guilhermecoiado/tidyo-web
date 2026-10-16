@@ -3,6 +3,8 @@
 // @ts-nocheck
 import { Fragment, useEffect, useReducer, useRef } from 'react';
 import './landing.css';
+import { COMBO, perMonth, perYear } from '../lib/pricing';
+import ScreenPreview from './LandingPreview';
 
 class DCLogic {
   props: any; state: any = {}; _update: () => void = () => {};
@@ -14,7 +16,7 @@ class DCLogic {
 class LandingLogic extends DCLogic {
   constructor(props){
     super(props);
-    this.state = { mode: 'res', yearly: false, open: 0, scene: 0, tick: 0, playing: true, persona: 0, tier: 0, chat: false, popup: false, popupSeen: false };
+    this.state = { mode: 'res', yearly: false, open: 0, scene: 0, prev: null, preview: null, tick: 0, playing: true, persona: 0, tier: 0, chat: false, popup: false, popupSeen: false };
   }
   componentDidMount(){
     let reduce = false;
@@ -23,12 +25,19 @@ class LandingLogic extends DCLogic {
     this._iv = setInterval(() => {
       const s = this.state;
       if (!s.playing) return;
-      if (s.tick >= 24) this.setState({ tick: 0, scene: (s.scene + 1) % 4 });
+      if (s.tick >= 24) this.goScene((s.scene + 1) % 4);
       else this.setState({ tick: s.tick + 1 });
     }, 200);
-    this._pt = setTimeout(() => { if (!this.state.popupSeen) this.setState({ popup: true, popupSeen: true }); }, 15000);
+    this._pt = setTimeout(() => { if (!this.state.popupSeen && !this.state.preview) this.setState({ popup: true, popupSeen: true }); }, 15000);
   }
-  componentWillUnmount(){ clearInterval(this._iv); clearTimeout(this._pt); }
+  // cross-fade: the old scene stays mounted while it fades out, the new one enters (and replays its animations)
+  goScene(i){
+    if (i === this.state.scene) return;
+    clearTimeout(this._st);
+    this.setState({ prev: this.state.scene, scene: i, tick: 0 });
+    this._st = setTimeout(() => this.setState({ prev: null }), 650);
+  }
+  componentWillUnmount(){ clearInterval(this._iv); clearTimeout(this._pt); clearTimeout(this._st); }
   renderVals() {
     const S = this.state;
     const P = this.props || {};
@@ -73,7 +82,7 @@ class LandingLogic extends DCLogic {
         bg: on ? '#0F4A41' : 'transparent', border: on ? '#2A6A60' : '#1E5149',
         numBg: on ? '#5FD4C1' : '#14463F', numFg: on ? '#0A3D35' : '#9DB5B0',
         prog: i < S.scene ? 100 : on ? Math.round(prog) : 0,
-        go: () => this.setState({ scene: i, tick: 0 })
+        go: () => this.goScene(i)
       };
     });
     const cur = C[S.scene];
@@ -174,9 +183,9 @@ class LandingLogic extends DCLogic {
     ];
 
     const y = S.yearly;
-    const fmt = (v) => '$' + (Number.isInteger(v) ? v : v.toFixed(2));
-    const pr = (m) => y ? Math.round(m * 10 / 12 * 100) / 100 : m;
-    const yearNote = (m) => y ? 'cobrado ' + fmt(m * 10) + ' por ano' : 'ou ' + fmt(Math.round(m * 10 / 12 * 100) / 100) + '/mês no anual';
+    const fmt = (v) => '$' + v.toLocaleString('en-US');
+    const pr = (m) => perMonth(m, y);
+    const yearNote = (m) => y ? 'cobrado ' + fmt(perYear(m)) + ' por ano' : 'ou ' + fmt(perMonth(m, true)) + '/mês no anual';
     const T = [{ label: 'até 5', p: 49 }, { label: '6–15', p: 99 }, { label: '16–40', p: 179 }, { label: '40+', p: 0 }];
     const tier = T[S.tier];
     const tiers = T.map((t, i) => ({ label: t.label, sel: S.tier === i ? 'true' : 'false', bg: S.tier === i ? '#FFFFFF' : 'transparent', fg: S.tier === i ? '#0A3D35' : '#4E7770', go: () => this.setState({ tier: i }) }));
@@ -186,8 +195,7 @@ class LandingLogic extends DCLogic {
       { name: 'Pro', desc: 'Para quem tem equipe e quer crescer.', price: fmt(pr(69)), per: '/mês', note: yearNote(69), items: ['Casas ilimitadas', 'Até 15 usuários', 'Rotas otimizadas e portal do cliente', 'Pagamento da equipe e relatório 1099', 'Exportação para QuickBooks', 'Revisão completa do Tidy'], bg: '#0A3D35', fg: '#EAF5F2', border: '#0A3D35', check: '#5FD4C1', btnBg: '#5FD4C1', btnFg: '#0A3D35', badge: true, isCom: false, cta: 'Testar grátis' },
       Object.assign({ name: 'Comercial', desc: 'Contratos com escritórios, clínicas e lojas. Pode assinar sozinho.', price: tier.p ? fmt(pr(tier.p)) : 'Sob consulta', per: tier.p ? '/mês' : '', note: tier.p ? 'Faixa de ' + tier.label + ' contratos' : 'Mais de 40 contratos: preço sob medida', items: ['Walkthrough e propostas', 'Contratos e reajustes', 'Ponto com geofence', 'Cobertura de turnos pelo Tidy', 'Inspeções de qualidade', 'Lucro por contrato'], badge: false, isCom: true, cta: tier.p ? 'Testar grátis' : 'Falar com a gente' }, light)
     ];
-    const combo = Math.round((69 + 49) * 0.8 * 100) / 100;
-    const comboText = y ? 'Pro + Comercial (até 5 contratos): ' + fmt(Math.round(combo * 10 / 12 * 100) / 100) + '/mês no anual, em vez de ' + fmt(Math.round(118 * 10 / 12 * 100) / 100) + '.' : 'Pro + Comercial (até 5 contratos): ' + fmt(combo) + '/mês em vez de $118. O desconto vale em todas as faixas.';
+    const comboText = y ? 'Pro + Comercial (até 5 contratos): ' + fmt(perMonth(COMBO, true)) + '/mês no anual, em vez de ' + fmt(perMonth(69, true) + perMonth(49, true)) + '.' : 'Pro + Comercial (até 5 contratos): ' + fmt(COMBO) + '/mês em vez de $118. O desconto vale em todas as faixas.';
     const guarantees = [
       { icon: I.card, title: '14 dias sem cartão', text: 'Tudo liberado no teste.' },
       { icon: I.unlock, title: 'Sem contrato', text: 'Mensal, sem fidelidade.' },
@@ -225,7 +233,8 @@ class LandingLogic extends DCLogic {
     return {
       heroTrust, chapters, demoTasks, pains, personaTabs, persona, ownerSide, helperSide, features, insights, compare, switchSteps,
       bubbles, plans, tiers, comboText, guarantees, included, faqs, mockJobs, chatOptions, popupItems,
-      s0: S.scene === 0, s1: S.scene === 1, s2: S.scene === 2, s3: S.scene === 3,
+      s0: S.scene === 0 || S.prev === 0, s1: S.scene === 1 || S.prev === 1, s2: S.scene === 2 || S.prev === 2, s3: S.scene === 3 || S.prev === 3,
+      c0: S.scene === 0 ? 'scene-in' : 'scene-out', c1: S.scene === 1 ? 'scene-in' : 'scene-out', c2: S.scene === 2 ? 'scene-in' : 'scene-out', c3: S.scene === 3 ? 'scene-in' : 'scene-out',
       sceneNum: S.scene + 1, sceneLabel: 'Demonstração do app, sem som: ' + cur.title,
       caption: { who: cur.who, title: cur.capT, text: cur.capX },
       playCls: paused ? 'paused' : '',
@@ -243,7 +252,9 @@ class LandingLogic extends DCLogic {
       openChat: () => this.setState({ chat: true }), closeChat: () => this.setState({ chat: false }),
       popup: S.popup || (!!P.showPopup && !S.popupSeen),
       openPopup: () => this.setState({ popup: true, popupSeen: true }),
-      closePopup: () => this.setState({ popup: false, popupSeen: true })
+      closePopup: () => this.setState({ popup: false, popupSeen: true }),
+      preview: S.preview, openOwner: () => this.setState({ preview: 'owner', popupSeen: true }), openHelper: () => this.setState({ preview: 'helper', popupSeen: true }),
+      setPreview: (w) => this.setState({ preview: w }), closePreview: () => this.setState({ preview: null })
     };
   }
 }
@@ -378,7 +389,7 @@ export default function Landing() {
             <button role="tab" aria-selected={c.sel} onClick={c.go} style={{ position: "relative", overflow: "hidden", textAlign: "left", minHeight: "72px", borderRadius: "18px", border: `1px solid ${c.border}`, background: c.bg, color: "#EAF5F2", padding: "14px 16px", cursor: "pointer", display: "flex", gap: "12px", alignItems: "center" }}>
               <span style={{ flex: "none", width: "34px", height: "34px", borderRadius: "34px", background: c.numBg, color: c.numFg, fontFamily: "'Bricolage Grotesque', sans-serif", fontWeight: "800", display: "flex", alignItems: "center", justifyContent: "center" }}>{c.n}</span>
               <span style={{ display: "flex", flexDirection: "column", gap: "2px" }}><span style={{ fontWeight: "800", fontSize: "16px" }}>{c.title}</span><span style={{ fontSize: "13.5px", color: "#9DB5B0" }}>{c.sub}</span></span>
-              <span aria-hidden="true" style={{ position: "absolute", left: "0", bottom: "0", height: "3px", width: `${c.prog}%`, background: "#5FD4C1" }}></span>
+              <span aria-hidden="true" className="chap-bar" style={{ position: "absolute", left: "0", bottom: "0", height: "3px", width: `${c.prog}%`, background: "#5FD4C1" }}></span>
             </button>
           </Fragment>))}
         </div>
@@ -387,13 +398,13 @@ export default function Landing() {
           <div className={v.playCls} role="img" aria-label={v.sceneLabel} style={{ position: "relative", width: "296px", height: "600px", boxSizing: "border-box", borderRadius: "44px", background: "#061F1B", padding: "10px", boxShadow: "0 30px 60px rgba(0,0,0,.35)" }}>
             <div style={{ position: "absolute", top: "18px", left: "20px", right: "20px", zIndex: "3", display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", gap: "4px" }}>
               {(v.chapters || []).map((c: any, __i7: number) => (<Fragment key={__i7}>
-                <span style={{ height: "3px", borderRadius: "3px", background: "rgba(15,31,28,.18)", overflow: "hidden" }}><span style={{ display: "block", height: "100%", width: `${c.prog}%`, background: "#0B7C6E" }}></span></span>
+                <span style={{ height: "3px", borderRadius: "3px", background: "rgba(15,31,28,.18)", overflow: "hidden" }}><span className="chap-bar" style={{ display: "block", height: "100%", width: `${c.prog}%`, background: "#0B7C6E" }}></span></span>
               </Fragment>))}
             </div>
             <div style={{ width: "100%", height: "100%", borderRadius: "35px", background: "#F4F7F6", overflow: "hidden", position: "relative", color: "#0F1F1C" }}>
 
               {!!(v.s0) && (<>
-                <div style={{ position: "absolute", inset: "0", padding: "34px 14px 14px", display: "flex", flexDirection: "column", gap: "10px", boxSizing: "border-box" }}>
+                <div className={v.c0} style={{ position: "absolute", inset: "0", padding: "34px 14px 14px", display: "flex", flexDirection: "column", gap: "10px", boxSizing: "border-box" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: "8px" }}><span style={{ fontSize: "10px", fontWeight: "700", color: "#566965", flexGrow: "1" }}>Qui, 15 out · 5:00</span><span style={{ fontSize: "9px", fontWeight: "800", background: "#D4F1E9", color: "#0A3D35", borderRadius: "999px", padding: "2px 7px" }}>Carla · dona</span></div>
                   <div style={{ background: "#0F1F1C", borderRadius: "18px", padding: "12px", display: "flex", flexDirection: "column", gap: "8px", color: "#FFFFFF" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: "8px" }}><span style={{ width: "24px", height: "24px", borderRadius: "24px", background: "#5FD4C1", display: "flex", alignItems: "center", justifyContent: "center" }}><svg width="12" height="12" viewBox="0 0 24 24" fill="#0F1F1C" aria-hidden="true"><path d="M12 3l1.9 4.6L18.5 9.5l-4.6 1.9L12 16l-1.9-4.6L5.5 9.5l4.6-1.9z"></path></svg></span><span style={{ fontSize: "12px", fontWeight: "800" }}>Tidy revisou o seu dia</span></div>
@@ -408,7 +419,7 @@ export default function Landing() {
               </>)}
 
               {!!(v.s1) && (<>
-                <div style={{ position: "absolute", inset: "0", padding: "34px 14px 14px", display: "flex", flexDirection: "column", gap: "10px", boxSizing: "border-box" }}>
+                <div className={v.c1} style={{ position: "absolute", inset: "0", padding: "34px 14px 14px", display: "flex", flexDirection: "column", gap: "10px", boxSizing: "border-box" }}>
                   <span style={{ fontFamily: "'Bricolage Grotesque', sans-serif", fontSize: "15px", fontWeight: "800" }}>Rota de Bianca · amanhã</span>
                   <div style={{ position: "relative", height: "250px", borderRadius: "16px", background: "#E6EEEC", overflow: "hidden" }}>
                     <svg width="100%" height="100%" viewBox="0 0 252 250" preserveAspectRatio="none" aria-hidden="true">
@@ -436,7 +447,7 @@ export default function Landing() {
               </>)}
 
               {!!(v.s2) && (<>
-                <div style={{ position: "absolute", inset: "0", padding: "34px 14px 14px", display: "flex", flexDirection: "column", gap: "9px", boxSizing: "border-box" }}>
+                <div className={v.c2} style={{ position: "absolute", inset: "0", padding: "34px 14px 14px", display: "flex", flexDirection: "column", gap: "9px", boxSizing: "border-box" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: "6px" }}><span style={{ fontFamily: "'Bricolage Grotesque', sans-serif", fontSize: "15px", fontWeight: "800", flexGrow: "1" }}>Casa Cohen · Cocina</span><span style={{ fontSize: "8.5px", fontWeight: "800", background: "#FDF0DC", color: "#8A4B05", borderRadius: "999px", padding: "2px 7px", display: "flex", alignItems: "center", gap: "4px" }}><span className="pulse-dot" style={{ width: "5px", height: "5px", borderRadius: "5px", background: "#8A4B05" }}></span>Sin señal · se guarda</span></div>
                   <span style={{ fontSize: "9.5px", color: "#566965", fontWeight: "700" }}>Bianca · en español · 2h46 hoy</span>
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "6px" }}>
@@ -455,15 +466,15 @@ export default function Landing() {
               </>)}
 
               {!!(v.s3) && (<>
-                <div style={{ position: "absolute", inset: "0", padding: "34px 14px 14px", display: "flex", flexDirection: "column", gap: "10px", boxSizing: "border-box" }}>
+                <div className={v.c3} style={{ position: "absolute", inset: "0", padding: "34px 14px 14px", display: "flex", flexDirection: "column", gap: "10px", boxSizing: "border-box" }}>
                   <span style={{ fontSize: "10px", fontWeight: "700", color: "#566965" }}>What the client sees · English</span>
                   <div style={{ position: "relative", background: "#FFFFFF", border: "1px solid #DFE7E5", borderRadius: "18px", padding: "14px", display: "flex", flexDirection: "column", gap: "8px" }}>
                     <span style={{ fontSize: "9px", fontWeight: "800", color: "#566965" }}>INVOICE #1042 · COHEN FAMILY</span>
                     <span style={{ fontFamily: "'Bricolage Grotesque', sans-serif", fontSize: "30px", fontWeight: "800" }}>$180.00</span>
                     <span style={{ fontSize: "10px", color: "#566965" }}>Recurring clean · Oct 15 · Bianca</span>
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "6px", marginTop: "4px" }}>
-                      <span className="tap" style={{ minHeight: "34px", borderRadius: "10px", background: "#0A3D35", color: "#FFFFFF", fontSize: "10.5px", fontWeight: "800", display: "flex", alignItems: "center", justifyContent: "center" }}>Pay by card</span>
-                      <span style={{ minHeight: "34px", borderRadius: "10px", background: "#F4F7F6", fontSize: "10.5px", fontWeight: "800", display: "flex", alignItems: "center", justifyContent: "center" }}>Bank (ACH)</span>
+                      <span className="tap" style={{ minHeight: "34px", borderRadius: "10px", background: "#0A3D35", color: "#FFFFFF", fontSize: "10.5px", fontWeight: "800", display: "flex", alignItems: "center", justifyContent: "center" }}>Pay with Zelle</span>
+                      <span style={{ minHeight: "34px", borderRadius: "10px", background: "#F4F7F6", fontSize: "10.5px", fontWeight: "800", display: "flex", alignItems: "center", justifyContent: "center" }}>Venmo · Check</span>
                     </div>
                     <span className="stamp" style={{ position: "absolute", right: "12px", top: "20px", border: "2.5px solid #0B7C6E", color: "#0B7C6E", borderRadius: "8px", padding: "2px 8px", fontFamily: "'Bricolage Grotesque', sans-serif", fontWeight: "800", fontSize: "16px", letterSpacing: ".06em" }}>PAID</span>
                   </div>
@@ -571,14 +582,14 @@ export default function Landing() {
           {(v.ownerSide || []).map((o: any, __i5: number) => (<Fragment key={__i5}>
             <span style={{ display: "flex", gap: "10px", fontSize: "15.5px", color: "#D3E8E3" }}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#5FD4C1" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ flex: "none", marginTop: "3px" }}><path d="M5 12l5 5L20 7"></path></svg>{o}</span>
           </Fragment>))}
-          <a href="/entrar" style={{ alignSelf: "flex-start", marginTop: "auto", minHeight: "44px", display: "flex", alignItems: "center", color: "#5FD4C1", fontWeight: "800", textDecoration: "none" }}>Ver a tela da dona →</a>
+          <button type="button" onClick={v.openOwner} className="lp-link" style={{ alignSelf: "flex-start", marginTop: "auto", minHeight: "44px", display: "flex", alignItems: "center", color: "#5FD4C1", fontWeight: "800", background: "transparent", border: "0", padding: "0", fontSize: "16px", cursor: "pointer" }}>Ver a tela da dona →</button>
         </div>
         <div style={{ background: "#F1FAF7", border: "1px solid #CDE9E1", borderRadius: "26px", padding: "28px", display: "flex", flexDirection: "column", gap: "16px" }}>
           <span style={{ display: "flex", alignItems: "center", gap: "10px" }}><span style={{ width: "44px", height: "44px", borderRadius: "14px", background: "#0A3D35", display: "flex", alignItems: "center", justifyContent: "center" }}><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#5FD4C1" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 21s-7-6.2-7-12a7 7 0 0 1 14 0c0 5.8-7 12-7 12zM12 11.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z"></path></svg></span><span style={{ fontFamily: "'Bricolage Grotesque', sans-serif", fontSize: "24px", fontWeight: "800" }}>O que a helper vê</span></span>
           {(v.helperSide || []).map((o: any, __i5: number) => (<Fragment key={__i5}>
             <span style={{ display: "flex", gap: "10px", fontSize: "15.5px", color: "#2F5B54" }}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0B7C6E" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ flex: "none", marginTop: "3px" }}><path d="M5 12l5 5L20 7"></path></svg>{o}</span>
           </Fragment>))}
-          <a href="/entrar" style={{ alignSelf: "flex-start", marginTop: "auto", minHeight: "44px", display: "flex", alignItems: "center", color: "#0B7C6E", fontWeight: "800", textDecoration: "none" }}>Ver a tela da helper →</a>
+          <button type="button" onClick={v.openHelper} className="lp-link" style={{ alignSelf: "flex-start", marginTop: "auto", minHeight: "44px", display: "flex", alignItems: "center", color: "#0B7C6E", fontWeight: "800", background: "transparent", border: "0", padding: "0", fontSize: "16px", cursor: "pointer" }}>Ver a tela da helper →</button>
         </div>
       </div>
     </div>
@@ -892,6 +903,7 @@ export default function Landing() {
       </div>
     </div>
   </>)}
+  {!!v.preview && <ScreenPreview who={v.preview} onSwitch={v.setPreview} onClose={v.closePreview} />}
 </div>
   );
 }

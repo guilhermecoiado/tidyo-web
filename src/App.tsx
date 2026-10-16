@@ -1,7 +1,8 @@
 import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom';
-import type { ReactNode } from 'react';
+import { useEffect, type ReactNode } from 'react';
 import { SessionProvider, useApp } from './lib/session';
 import { FullLoader } from './components/ui';
+import { releaseSplash } from './lib/splash';
 import Auth, { MfaPrompt, NewPassword } from './pages/Auth';
 import Onboarding, { AcceptInvite } from './pages/Onboarding';
 import Home from './screens/Home';
@@ -68,6 +69,7 @@ const routeKey = (p: string) => (p.startsWith('/app/financas') || p === '/app/co
 function Routed() {
   const { ready, session, needsMfa, refresh } = useApp();
   const loc = useLocation();
+  useEffect(() => { if (ready) releaseSplash(); }, [ready]);
   if (!ready) return <FullLoader />;
   if (session && needsMfa) return <MfaPrompt onDone={refresh} />;
   return (

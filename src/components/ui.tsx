@@ -1,7 +1,8 @@
-import { useCallback, useEffect, useId, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useId, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { NavLink, useLocation } from 'react-router-dom';
 import { useApp } from '../lib/session';
+import { loaderStart, splashVisible } from '../lib/splash';
 
 export function Logo({ size = 36, animated = false }: { size?: number; animated?: boolean }) {
   return (
@@ -186,8 +187,11 @@ export function LoadingList({ n = 4 }: { n?: number }) {
 /** Splash (canvas "Splash"): the squeegee flips and sweeps while the session loads */
 export function FullLoader() {
   const { t } = useApp();
+  // installed app: the HTML splash is the only opening animation; keep its colour underneath
+  if (splashVisible()) return <div style={{ position: 'fixed', inset: 0, background: '#0A3D35' }} aria-busy="true" />;
+  const d = { '--kd': `-${(Date.now() - loaderStart) % 3400}ms`, '--kb': `-${(Date.now() - loaderStart) % 1400}ms` } as CSSProperties;
   return (
-    <div className="k-splash">
+    <div className="k-splash" style={d}>
       <div className="k-splash-bg" aria-hidden="true" />
       <svg width="150" height="150" viewBox="0 0 64 64" role="img" aria-label="Tidyo" style={{ position: 'relative' }}>
         <rect className="k-streak" x="13" y="51.5" width="38" height="2.4" rx="1.2" fill="#12A38F" />

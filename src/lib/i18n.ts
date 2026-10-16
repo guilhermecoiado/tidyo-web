@@ -1604,7 +1604,7 @@ const D: Dict = {
   'jt.waitSub': ["{company} precisa aprovar sua entrada como {role}.", "{company} needs to approve you as {role}.", "{company} debe aprobar tu entrada como {role}."],
   'jt.waitNote': ["Assim que aprovarem, o app abre o seu dia automaticamente. Você também recebe um aviso.", "As soon as you’re approved, the app opens your day automatically. You’ll also get a notification.", "En cuanto te aprueben, la app abre tu día automáticamente. También recibes un aviso."],
   'jt.check': ["Verificar agora", "Check now", "Verificar ahora"],
-  'sp.loading': ["Varrendo sua agenda…", "Sweeping your schedule…", "Barriendo tu agenda…"],
+  'sp.loading': ["Varrendo sua tela…", "Sweeping your screen…", "Barriendo tu pantalla…"],
   'sa.nav.overview': ["Visão geral", "Overview", "Resumen"],
   'sa.nav.subs': ["Assinantes", "Subscribers", "Suscriptores"],
   'sa.nav.plans': ["Planos e limites", "Plans and limits", "Planes y límites"],
