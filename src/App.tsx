@@ -4,7 +4,12 @@ import { SessionProvider, useApp } from './lib/session';
 import { FullLoader } from './components/ui';
 import Auth, { NewPassword } from './pages/Auth';
 import Onboarding, { AcceptInvite } from './pages/Onboarding';
-import { Billing, Clients, Home, More, Schedule } from './pages/Owner';
+import { Billing, More } from './pages/Owner';
+import Home from './screens/Home';
+import Agenda from './screens/Agenda';
+import NewJob from './screens/NewJob';
+import Clients from './screens/Clients';
+import NewClient from './screens/NewClient';
 import MyDay from './pages/MyDay';
 import Inbox, { Help } from './pages/Inbox';
 import Admin from './pages/Admin';
@@ -67,8 +72,10 @@ function Routed() {
       <Route path="/portal" element={<Gate need="portal"><Portal /></Gate>} />
       <Route path="/portal/convite" element={<PortalInvite />} />
       <Route path="/app" element={<Gate need="staff"><Home /></Gate>} />
-      <Route path="/app/agenda" element={<Gate need="staff"><Schedule /></Gate>} />
+      <Route path="/app/agenda" element={<Gate need="staff"><Agenda /></Gate>} />
+      <Route path="/app/agenda/novo" element={<Gate need="staff"><NewJob /></Gate>} />
       <Route path="/app/clientes" element={<Gate need="staff"><Clients /></Gate>} />
+      <Route path="/app/clientes/novo" element={<Gate need="staff"><NewClient /></Gate>} />
       <Route path="/app/cobrancas" element={<Gate need="staff"><Billing /></Gate>} />
       <Route path="/app/financas" element={<Gate need="staff"><FinanceOverview /></Gate>} />
       <Route path="/app/financas/despesas" element={<Gate need="staff"><Expenses /></Gate>} />

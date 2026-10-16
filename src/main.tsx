@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import App from './App';
 import './tokens.css';
 import './app.css';
+import './kit.css';
 import { captureInstallPrompt } from './lib/install';
 
 captureInstallPrompt();

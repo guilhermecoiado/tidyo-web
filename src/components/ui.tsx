@@ -138,10 +138,10 @@ export function Confirm({ text, confirmLabel, danger, onConfirm, onCancel, busy 
   return createPortal(
     <div className={`scrim center${closing ? ' closing' : ''}`} onMouseDown={(e) => { if (e.target === e.currentTarget) close(); }}>
       <div className="dialog" role="alertdialog" aria-modal="true">
-        <p style={{ margin: 0, fontWeight: 700, fontSize: 16 }}>{text}</p>
-        <div className="grid2">
-          <button className="btn btn-secondary" onClick={close}>{t('c.cancel')}</button>
-          <button className={`btn ${danger ? 'btn-danger' : 'btn-primary'}`} style={{ minHeight: 44 }} onClick={onConfirm} disabled={busy}>{confirmLabel}</button>
+        <p style={{ margin: 0, fontWeight: 700, fontSize: 16, lineHeight: 1.45, textWrap: 'pretty' as never }}>{text}</p>
+        <div className="k-pair">
+          <button className="k-btn k-btn-line" style={{ flex: '0 1 auto', whiteSpace: 'nowrap' }} onClick={close}>{t('c.back')}</button>
+          <button className={`k-btn ${danger ? 'k-btn-danger' : 'k-btn-fill'}`} style={{ whiteSpace: 'nowrap', padding: '0 14px' }} onClick={onConfirm} disabled={busy}>{confirmLabel}</button>
         </div>
       </div>
     </div>

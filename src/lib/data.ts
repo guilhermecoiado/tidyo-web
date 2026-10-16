@@ -1,21 +1,23 @@
 import { supabase } from './supabase';
 
-export type Member = { id: string; display_name: string; role: 'owner' | 'manager' | 'helper'; status: string; language: string; user_id: string | null; gender?: 'f' | 'm' | null; origin_address?: string | null };
-export type Property = { id: string; client_id: string; label: string; address_line1: string; city: string; state: string; zip: string; lat: number | null; lng: number | null; access_instructions: string | null; pets: string | null; special_instructions: string | null };
-export type Client = { id: string; kind: 'residential' | 'commercial'; name: string; portal_user_id: string | null; email: string | null; phone: string | null; language: string; no_translate: boolean; notes: string | null; properties: Property[] };
+export type Member = { id: string; display_name: string; role: 'owner' | 'manager' | 'helper'; status: string; language: string; user_id: string | null; gender?: 'f' | 'm' | null; origin_address?: string | null; created_at?: string };
+export type Property = { id: string; client_id: string; label: string; address_line1: string; city: string; state: string; zip: string; lat: number | null; lng: number | null; access_instructions: string | null; pets: string | null; special_instructions: string | null; bedrooms?: number | null; bathrooms?: number | null; square_feet?: number | null };
+export type Client = { id: string; kind: 'residential' | 'commercial'; name: string; contact_name?: string | null; created_at?: string; portal_user_id: string | null; email: string | null; phone: string | null; language: string; no_translate: boolean; notes: string | null; properties: Property[] };
 export type Job = {
   id: string; client_id: string; property_id: string; status: string; scheduled_start: string; scheduled_end: string;
   price_cents: number; client_notes: string | null; internal_notes: string | null; completion_note: string | null; recurrence_id: string | null;
   rating_status: string; rating: number | null; rating_comment: string | null;
   contract_id: string | null; start_distance_m: number | null; start_inside_geofence: boolean | null;
-  clients: { name: string } | null; properties: { address_line1: string; city: string } | null; job_assignments: { membership_id: string }[];
+  service_id?: string | null; started_at?: string | null; completed_at?: string | null;
+  clients: { name: string; kind?: 'residential' | 'commercial' } | null; properties: { address_line1: string; city: string; state?: string; lat?: number | null; lng?: number | null } | null;
+  services?: { name: string } | null; recurrences?: { rrule: string } | null; job_assignments: { membership_id: string }[];
 };
 export type Invoice = {
   id: string; number: string; status: string; issued_on: string | null; due_on: string | null; total_cents: number; paid_cents: number;
   client_id: string; clients: { name: string } | null;
 };
 
-const JOB_SELECT = 'id, client_id, property_id, status, scheduled_start, scheduled_end, price_cents, client_notes, internal_notes, completion_note, recurrence_id, rating_status, rating, rating_comment, contract_id, start_distance_m, start_inside_geofence, clients(name), properties(address_line1, city), job_assignments(membership_id)';
+const JOB_SELECT = 'id, client_id, property_id, status, scheduled_start, scheduled_end, price_cents, client_notes, internal_notes, completion_note, recurrence_id, rating_status, rating, rating_comment, contract_id, start_distance_m, start_inside_geofence, service_id, started_at, completed_at, clients(name, kind), properties(address_line1, city, state, lat, lng), services(name), recurrences(rrule), job_assignments(membership_id)';
 
 export async function getJobs(companyId: string, from: Date, to: Date) {
   const { data, error } = await supabase.from('jobs').select(JOB_SELECT)
@@ -31,14 +33,14 @@ export async function getClientJobs(clientId: string) {
 }
 
 export async function getMembers(companyId: string) {
-  const { data } = await supabase.from('memberships').select('id, display_name, role, status, language, user_id, gender, origin_address')
+  const { data } = await supabase.from('memberships').select('id, display_name, role, status, language, user_id, gender, origin_address, created_at')
     .eq('company_id', companyId).in('status', ['active', 'invited']).order('display_name');
   return (data || []) as Member[];
 }
 
 export async function getClients(companyId: string) {
   const { data, error } = await supabase.from('clients')
-    .select('id, kind, name, email, phone, language, no_translate, notes, portal_user_id, properties(id, client_id, label, address_line1, city, state, zip, lat, lng, access_instructions, pets, special_instructions)')
+    .select('id, kind, name, contact_name, created_at, email, phone, language, no_translate, notes, portal_user_id, properties(id, client_id, label, address_line1, city, state, zip, lat, lng, access_instructions, pets, special_instructions, bedrooms, bathrooms, square_feet)')
     .eq('company_id', companyId).is('archived_at', null).order('name');
   if (error) throw error;
   return (data || []) as unknown as Client[];
@@ -85,4 +87,30 @@ export function findConflicts(jobs: Job[]) {
     }
   }
   return out;
+}
+
+// Each person keeps one colour everywhere (agenda, routes, avatars): by join order
+export function memberIndex(members: Member[], id: string | undefined | null) {
+  if (!id) return -1;
+  const order = [...members].sort((a, b) => (a.created_at || '').localeCompare(b.created_at || '') || a.id.localeCompare(b.id));
+  return order.findIndex((m) => m.id === id);
+}
+
+export type Service = { id: string; name: string; kind: 'residential' | 'commercial'; default_price_cents: number; default_duration_min: number; active: boolean };
+export async function getServices(companyId: string) {
+  const { data } = await supabase.from('services').select('id, name, kind, default_price_cents, default_duration_min, active').eq('company_id', companyId).eq('active', true).order('default_price_cents');
+  return (data || []) as Service[];
+}
+
+export const jobMinutes = (j: { scheduled_start: string; scheduled_end: string }) => Math.round((new Date(j.scheduled_end).getTime() - new Date(j.scheduled_start).getTime()) / 60000);
+
+/** "Excluir cliente": future visits are canceled, history and invoices stay for the books */
+export async function archiveClient(clientId: string) {
+  const { error: e1 } = await supabase.from('jobs').update({ status: 'canceled', canceled_at: new Date().toISOString() })
+    .eq('client_id', clientId).eq('status', 'scheduled').gte('scheduled_start', new Date().toISOString());
+  if (e1) throw e1;
+  await supabase.from('recurrences').update({ active: false }).eq('client_id', clientId);
+  await supabase.from('contracts').update({ status: 'ended' }).eq('client_id', clientId).in('status', ['proposal', 'active', 'paused']);
+  const { error } = await supabase.from('clients').update({ archived_at: new Date().toISOString(), portal_user_id: null }).eq('id', clientId);
+  if (error) throw error;
 }
