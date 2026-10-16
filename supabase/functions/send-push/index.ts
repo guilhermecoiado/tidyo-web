@@ -15,7 +15,11 @@ const T: Record<string, [string, string, string]> = {
   job_assigned: ['Novo serviço: {client}', 'New job: {client}', 'Nuevo servicio: {client}'],
   support_reply: ['O suporte respondeu sua mensagem', 'Support replied to your message', 'Soporte respondió tu mensaje'],
   message: ['Nova mensagem de {who}', 'New message from {who}', 'Nuevo mensaje de {who}'],
-  tidy_daily: ['Tidy: {total} item(ns) pedem atenção hoje', 'Tidy: {total} item(s) need attention today', 'Tidy: {total} punto(s) necesitan atención hoy'],
+  tidy_daily: ['Tidy: há itens que pedem atenção hoje ({total})', 'Tidy: items need your attention today ({total})', 'Tidy: hay puntos que necesitan atención hoy ({total})'],
+  route_ready: ['Sua rota de {date} está pronta: {stops} paradas', 'Your route for {date} is ready: {stops} stops', 'Tu ruta del {date} está lista: {stops} paradas'],
+  join_request: ['{who} pediu para entrar na equipe', '{who} asked to join the team', '{who} pidió unirse al equipo'],
+  join_approved: ['Seu acesso à equipe foi aprovado', 'Your team access was approved', 'Tu acceso al equipo fue aprobado'],
+  client_request: ['{client} fez um pedido: {text}', '{client} sent a request: {text}', '{client} hizo un pedido: {text}'],
 };
 const idx: Record<L, number> = { 'pt-BR': 0, en: 1, es: 2 };
 

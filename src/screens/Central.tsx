@@ -15,7 +15,7 @@ type Cat = 'tidy' | 'equipe' | 'cliente' | 'tidyo';
 
 const CAT: Record<string, Cat> = {
   tidy_daily: 'tidy', job_issue: 'equipe', expense_pending: 'equipe', job_completed: 'equipe', job_assigned: 'equipe', route_ready: 'equipe', join_request: 'equipe',
-  job_rated: 'cliente', message: 'cliente', broadcast: 'tidyo', support_reply: 'tidyo', join_approved: 'tidyo',
+  job_rated: 'cliente', message: 'cliente', client_request: 'cliente', broadcast: 'tidyo', support_reply: 'tidyo', join_approved: 'tidyo',
 };
 const ICON: Record<Cat, [string, string, string]> = { tidy: ['T', C.ink, '#5FD4C1'], equipe: ['EQ', '#DDF1EC', '#0B6B5F'], cliente: ['CL', '#E8E4F8', '#4B3BA8'], tidyo: ['t', C.accent, '#FFFFFF'] };
 const hash = (s: string) => [...s].reduce((h, c) => (h * 31 + c.charCodeAt(0)) | 0, 0);
@@ -74,6 +74,7 @@ export default function Central() {
       case 'job_assigned': return { title: t('nt.job_assigned', { client: s('client'), when: d.start ? new Date(s('start')).toLocaleString(lang, { weekday: 'short', day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' }) : '' }), body: '' };
       case 'route_ready': return { title: t('ce.routeReady'), body: t('ce.routeReadyD', { n: s('stops'), date: d.date ? new Date(s('date') + 'T12:00').toLocaleDateString(lang, { weekday: 'long', day: 'numeric', month: 'long' }) : '' }) };
       case 'join_request': return { title: t('ce.joinRequest', { who: s('who') }), body: t('ce.joinRequestD') };
+      case 'client_request': return { title: t('ce.clientRequest', { client: s('client'), kind: t(`po.rk.${s('kind') || 'other'}`).toLowerCase() }), body: s('text') };
       case 'join_approved': return { title: t('ce.joinApproved'), body: '' };
       case 'support_reply': return { title: t('nt.support_reply'), body: '' };
       case 'message': return { title: t('nt.message', { who: s('who') }), body: '' };

@@ -1,6 +1,6 @@
 // Clientes — canvas Clientes (list with margin, filters, detail sheet with 90-day profit, notes and visits)
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useApp } from '../lib/session';
 import { Confirm, Sheet } from '../components/ui';
@@ -24,6 +24,7 @@ export default function Clients() {
   const [q, setQ] = useState('');
   const [sel, setSel] = useState<Client | null>(null);
   const [imp, setImp] = useState(false);
+  const [params, setParams] = useSearchParams();
 
   const load = useCallback(async () => {
     if (!company) return;
@@ -41,6 +42,14 @@ export default function Clients() {
     setRenew(new Map(((ct.data || []) as { client_id: string; renews_on: string | null }[]).map((r) => [r.client_id, r.renews_on])));
   }, [company]);
   useEffect(() => { load(); }, [load]);
+  // deep link from a notification: /app/clientes?c=<id>
+  useEffect(() => {
+    const id = params.get('c');
+    if (!id || !clients) return;
+    const c = clients.find((x) => x.id === id);
+    if (c) setSel(c);
+    const p = new URLSearchParams(params); p.delete('c'); setParams(p, { replace: true });
+  }, [params, clients, setParams]);
 
   const margin = (id: string) => { const p = profit.get(id); return p && p.revenue_cents > 0 ? p.profit_cents / p.revenue_cents : null; };
   const list = useMemo(() => (clients || []).filter((c) => {
@@ -119,7 +128,15 @@ export function ClientSheet({ client, color, profit, onClose, onChanged }: { cli
   const [portalLink, setPortalLink] = useState('');
   const [askDel, setAskDel] = useState(false);
   const [hasGeo, setHasGeo] = useState(!!(client.properties[0]?.lat && client.properties[0]?.lng));
+  const [reqs, setReqs] = useState<{ id: string; kind: string; body: string; status: string; created_at: string }[]>([]);
   const p = client.properties[0];
+  useEffect(() => {
+    supabase.from('client_requests').select('id, kind, body, status, created_at').eq('client_id', client.id).order('created_at', { ascending: false }).limit(10).then(({ data }) => setReqs((data || []) as typeof reqs));
+  }, [client.id]);
+  const setReqStatus = async (id: string, status: string) => {
+    const { error } = await supabase.from('client_requests').update({ status, updated_at: new Date().toISOString() }).eq('id', id);
+    if (error) toast(tErr(error.message)); else setReqs((l) => l.map((r) => (r.id === id ? { ...r, status } : r)));
+  };
   useEffect(() => {
     supabase.from('jobs').select('id, scheduled_start, started_at, completed_at, status, rating, rating_status, contract_id, services(name), job_assignments(membership_id)')
       .eq('client_id', client.id).in('status', ['completed']).order('scheduled_start', { ascending: false }).limit(6)
@@ -208,6 +225,22 @@ export function ClientSheet({ client, color, profit, onClose, onChanged }: { cli
           })}
         </div>
       </div>
+
+      {reqs.length > 0 && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <span className="k-sec"><span>{t('po.requests')}</span></span>
+          <div style={{ background: '#FFFFFF', border: `1px solid ${C.line}`, borderRadius: 16, padding: '0 12px' }}>
+            {reqs.map((r, i) => (
+              <div key={r.id} style={{ display: 'flex', flexDirection: 'column', gap: 6, padding: '10px 0', borderTop: i ? `1px solid ${C.soft}` : 0 }}>
+                <span style={{ fontSize: 13.5, fontWeight: 700 }}>{t(`po.rk.${r.kind}`)}: <span style={{ fontWeight: 500 }}>{r.body}</span></span>
+                <div className="k-chips">
+                  {(['sent', 'scheduled', 'done', 'declined'] as const).map((st) => <button key={st} className="k-chip light" aria-pressed={r.status === st} onClick={() => setReqStatus(r.id, st)} style={{ minHeight: 32, fontSize: 12 }}>{t(`po.rs.${st}`)}</button>)}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
         <span className="k-sec"><span>{t('cl.portal')}</span></span>

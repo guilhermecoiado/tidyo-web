@@ -25,7 +25,8 @@ import Navigation from './screens/Navigation';
 import { Expenses, TeamPay } from './pages/Finance';
 import Landing from './pages/Landing';
 import JobWork from './screens/JobWork';
-import Portal, { PortalInvite } from './pages/Portal';
+import { PortalInvite } from './pages/Portal';
+import Portal from './screens/Portal';
 
 function Gate({ need, children }: { need: 'staff' | 'member' | 'portal' | 'any' | 'admin'; children: ReactNode }) {
   const { ready, session, membership, isStaff, portal, isAdmin } = useApp();
