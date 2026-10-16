@@ -1,5 +1,5 @@
 // Início do dono — canvas: Main (residencial/ambos), InicioComercial (só comercial), PrimeirosPassos (conta nova)
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState, type CSSProperties } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useApp } from '../lib/session';
@@ -102,12 +102,30 @@ export default function Home() {
   return <OwnerHome members={members} clients={clients} />;
 }
 
+/** Loading state (canvas "Esqueleto"): the shape of Hoje with a sweeping logo */
 export function HomeSkeleton() {
+  const sk = (w: number | string, h: number, r = 6, extra: CSSProperties = {}) => <div className="skeleton" style={{ width: w, height: h, borderRadius: r, ...extra }} />;
   return (
-    <div className="k-screen"><main className="k-page top20" aria-busy="true">
-      <div className="k-hello"><div className="skeleton" style={{ width: 38, height: 38, borderRadius: 12 }} /><div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 6 }}><div className="skeleton" style={{ width: 110, height: 10 }} /><div className="skeleton" style={{ width: 170, height: 18 }} /></div></div>
-      <div className="k-kpis">{[0, 1, 2].map((i) => <div key={i} className="skeleton" style={{ height: 92, borderRadius: 16 }} />)}</div>
-      {[0, 1, 2, 3].map((i) => <div key={i} className="skeleton" style={{ height: 86, borderRadius: 16 }} />)}
+    <div className="k-screen"><main className="k-page top20" aria-busy="true" style={{ gap: 18 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <svg width="36" height="36" viewBox="0 0 64 64" role="img" aria-label="…" style={{ flex: 'none' }}><rect width="64" height="64" rx="17" fill="#D4F1E9" /><g className="tidy-sweep"><g transform="translate(11 8.5) scale(0.7)"><rect x="12" y="9.5" width="36" height="4" rx="2" fill="#12A38F" /><rect x="10" y="12.5" width="40" height="10" rx="5" fill="#0A3D35" /><path d="M30 20 V 44 C 30 51.5, 34 55, 41.5 54" fill="none" stroke="#0A3D35" strokeWidth="7" strokeLinecap="round" /></g></g></svg>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6, flex: 1 }}>{sk(110, 11)}{sk(170, 18, 8)}</div>
+        {sk(44, 44, 14)}{sk(44, 44, 14)}
+      </div>
+      {sk('100%', 52, 14)}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 10 }}>
+        {[0, 1, 2].map((i) => <div key={i} style={{ background: '#FFFFFF', border: `1px solid ${C.line}`, borderRadius: 16, padding: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>{sk('60%', 9, 5)}{sk('50%', 22, 7)}{sk('80%', 9, 5)}</div>)}
+      </div>
+      <div style={{ display: 'flex', justifyContent: 'space-between' }}>{sk(140, 16, 7)}{sk(56, 12)}</div>
+      {[['62%', '84%'], ['48%', '70%'], ['70%', '76%'], ['55%', '66%']].map(([a, b], i) => (
+        <div key={i} style={{ background: '#FFFFFF', border: `1px solid ${C.line}`, borderRadius: 16, padding: 12, display: 'flex', gap: 12, alignItems: 'center' }}>
+          <div style={{ width: 54, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>{sk(38, 12)}{sk(22, 9, 5)}</div>
+          <div style={{ width: 1, alignSelf: 'stretch', background: C.line }} />
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 7, flex: 1 }}>{sk(a, 12)}{sk(b, 9, 5)}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>{sk(22, 22, 22)}{sk(64, 9, 5)}{sk(70, 20, 999, { marginLeft: 'auto' })}</div>
+          </div>
+        </div>
+      ))}
     </main><OwnerBar /></div>
   );
 }

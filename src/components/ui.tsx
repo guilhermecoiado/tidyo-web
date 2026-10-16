@@ -183,10 +183,22 @@ export function LoadingList({ n = 4 }: { n?: number }) {
   );
 }
 
+/** Splash (canvas "Splash"): the squeegee flips and sweeps while the session loads */
 export function FullLoader() {
+  const { t } = useApp();
   return (
-    <div className="center-load" role="status" aria-label="Tidyo">
-      <Logo size={64} animated />
+    <div className="k-splash">
+      <div className="k-splash-bg" aria-hidden="true" />
+      <svg width="150" height="150" viewBox="0 0 64 64" role="img" aria-label="Tidyo" style={{ position: 'relative' }}>
+        <rect className="k-streak" x="13" y="51.5" width="38" height="2.4" rx="1.2" fill="#12A38F" />
+        <g className="k-flip"><g transform="translate(11 8.5) scale(0.7)"><rect x="12" y="9.5" width="36" height="4" rx="2" fill="#12A38F" /><rect x="10" y="12.5" width="40" height="10" rx="5" fill="#0A3D35" /><path d="M30 20 V 44 C 30 51.5, 34 55, 41.5 54" fill="none" stroke="#0A3D35" strokeWidth="7" strokeLinecap="round" /></g></g>
+        <path className="k-spark" d="M50 14 l1.2 3.1 3.1 1.2 -3.1 1.2 -1.2 3.1 -1.2 -3.1 -3.1 -1.2 3.1 -1.2 z" fill="#12A38F" />
+      </svg>
+      <span className="k-splash-word">tidyo</span>
+      <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
+        <span role="status" style={{ fontSize: 14, fontWeight: 600, color: '#2F5B54' }}>{t('sp.loading')}</span>
+        <div style={{ width: 140, height: 4, borderRadius: 4, background: '#B5E2D6', overflow: 'hidden' }}><div className="k-bar-run" /></div>
+      </div>
     </div>
   );
 }

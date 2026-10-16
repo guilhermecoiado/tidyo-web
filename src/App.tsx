@@ -2,7 +2,7 @@ import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-route
 import type { ReactNode } from 'react';
 import { SessionProvider, useApp } from './lib/session';
 import { FullLoader } from './components/ui';
-import Auth, { NewPassword } from './pages/Auth';
+import Auth, { MfaPrompt, NewPassword } from './pages/Auth';
 import Onboarding, { AcceptInvite } from './pages/Onboarding';
 import Home from './screens/Home';
 import Agenda from './screens/Agenda';
@@ -17,7 +17,6 @@ import MyDay, { HelperPay, HelperProfile } from './screens/MyDay';
 import Help from './screens/Help';
 import Central from './screens/Central';
 import Admin from './pages/Admin';
-import { MfaPrompt } from './pages/Security';
 import Contracts from './pages/Contracts';
 import ChatScreen from './screens/Chat';
 import RoutesScreen from './screens/Routes';
@@ -26,6 +25,7 @@ import { Expenses, TeamPay } from './pages/Finance';
 import Landing from './pages/Landing';
 import JobWork from './screens/JobWork';
 import { PortalInvite } from './pages/Portal';
+import JoinTeam, { PendingJoin } from './pages/JoinTeam';
 import Portal from './screens/Portal';
 
 function Gate({ need, children }: { need: 'staff' | 'member' | 'portal' | 'any' | 'admin'; children: ReactNode }) {
@@ -42,9 +42,13 @@ function Gate({ need, children }: { need: 'staff' | 'member' | 'portal' | 'any' 
 }
 
 function Root({ publicPage }: { publicPage: 'landing' | 'auth' }) {
-  const { ready, session, membership, isStaff, portal, isAdmin } = useApp();
+  const { ready, session, membership, isStaff, portal, isAdmin, pendingJoin } = useApp();
   if (!ready) return <FullLoader />;
   if (!session) return publicPage === 'landing' ? <Landing /> : <Auth />;
+  let teamLink = '';
+  try { teamLink = sessionStorage.getItem('tidyo.teamLink') || ''; } catch { /* ignore */ }
+  if (!membership && pendingJoin) return <PendingJoin />;
+  if (!membership && teamLink) return <Navigate to={`/equipe?t=${encodeURIComponent(teamLink)}`} replace />;
   let invite = '';
   try { invite = sessionStorage.getItem('tidyo.invite') || ''; } catch { /* ignore */ }
   if (invite && !membership) return <Navigate to={`/convite?t=${encodeURIComponent(invite)}`} replace />;
@@ -73,6 +77,7 @@ function Routed() {
       <Route path="/nova-senha" element={<NewPassword />} />
       <Route path="/comecar" element={<Onboarding />} />
       <Route path="/convite" element={<AcceptInvite />} />
+      <Route path="/equipe" element={<JoinTeam />} />
       <Route path="/dia" element={<Gate need="member"><MyDay /></Gate>} />
       <Route path="/dia/servico/:id" element={<Gate need="member"><JobWork /></Gate>} />
       <Route path="/portal" element={<Gate need="portal"><Portal /></Gate>} />

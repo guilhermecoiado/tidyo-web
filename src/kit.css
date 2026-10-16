@@ -161,3 +161,17 @@ textarea.k-input { padding: 12px 14px; min-height: 96px; resize: vertical; line-
 @media (prefers-reduced-motion: reduce) { .k-btn, .k-fab { transition: none; } }
 .k-step { width: 44px; height: 44px; flex: none; border-radius: 12px; border: 1px solid #DFE7E5; background: #F4F7F6; font-size: 20px; font-weight: 700; color: #0F1F1C; cursor: pointer; font-family: inherit; padding: 0; }
 .k-step:active { transform: scale(.96); }
+
+/* Splash (canvas "Splash") */
+.k-splash { position: fixed; inset: 0; background: #D4F1E9; color: #0A3D35; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 22px; overflow: hidden; font-family: Manrope, 'Segoe UI', sans-serif; }
+.k-splash-bg { position: absolute; width: 520px; height: 520px; border-radius: 520px; background: #C6EBE1; top: 50%; left: 50%; transform: translate(-50%, -48%); }
+.k-splash-word { position: relative; font-family: 'Bricolage Grotesque', sans-serif; font-size: 40px; font-weight: 800; letter-spacing: -0.035em; line-height: 1; }
+.k-flip { transform-box: view-box; transform-origin: 32px 32px; animation: kFlip 3.4s cubic-bezier(.55,0,.35,1) infinite; }
+.k-streak { transform-box: fill-box; transform-origin: center; animation: kStreak 3.4s ease-in-out infinite; opacity: 0; }
+.k-spark { transform-box: fill-box; transform-origin: center; animation: kSpark 3.4s ease-in-out infinite; opacity: 0; }
+.k-bar-run { width: 40%; height: 4px; border-radius: 4px; background: #0A3D35; animation: kBar 1.4s ease-in-out infinite; }
+@keyframes kFlip { 0%,12% { transform: rotate(0deg) translateX(0); } 28% { transform: rotate(180deg) translateX(0); } 38% { transform: rotate(180deg) translateX(7px); } 50% { transform: rotate(180deg) translateX(-7px); } 62% { transform: rotate(180deg) translateX(7px); } 72% { transform: rotate(180deg) translateX(0); } 88%,100% { transform: rotate(360deg) translateX(0); } }
+@keyframes kStreak { 0%,32% { opacity: 0; transform: scaleX(.2); } 42% { opacity: .95; transform: scaleX(.6); } 66% { opacity: .95; transform: scaleX(1); } 80%,100% { opacity: 0; transform: scaleX(1); } }
+@keyframes kSpark { 0%,70% { opacity: 0; transform: scale(.4); } 78% { opacity: 1; transform: scale(1.15); } 90%,100% { opacity: 0; transform: scale(.8); } }
+@keyframes kBar { 0% { transform: translateX(-110%); } 100% { transform: translateX(260%); } }
+@media (prefers-reduced-motion: reduce) { .k-flip, .k-streak, .k-spark, .k-bar-run { animation: none; } .k-streak { opacity: 1; } }
