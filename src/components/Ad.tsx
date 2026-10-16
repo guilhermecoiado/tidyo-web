@@ -7,7 +7,7 @@ import { Svg, I } from './kit';
 export type AdRow = {
   id: string; name: string; format: 'top_banner' | 'cta_card' | 'popup' | 'fullscreen'; media_type: string; media_path: string | null;
   content: Record<string, { title?: string; body?: string; cta?: string; brand?: string; bg?: string; accent?: string }>;
-  cta_url: string | null; utm: Record<string, string>; close_after_seconds: number | null; targeting: { plans?: string[]; languages?: string[] } | null;
+  cta_url: string | null; utm: Record<string, string>; close_after_seconds: number | null; targeting: { plans?: string[]; languages?: string[]; frequency?: 'daily' | 'once' | 'always' } | null;
 };
 
 const SEEN = 'tidyo.adsClosed';
@@ -33,10 +33,10 @@ export function useAd() {
           !closed.includes(a.id) && (!a.starts_at || a.starts_at <= now) && (!a.ends_at || a.ends_at > now) &&
           (!a.targeting?.plans?.length || a.targeting.plans.includes(plan) || (sub?.has_commercial && a.targeting.plans.includes('comercial'))) &&
           (!a.targeting?.languages?.length || a.targeting.languages.includes(lang)) &&
-          !((a.format === 'popup' || a.format === 'fullscreen') && shown[a.id] === today));
+          !(a.targeting?.frequency === 'once' ? !!shown[a.id] : a.targeting?.frequency === 'always' ? false : (a.format === 'popup' || a.format === 'fullscreen') && shown[a.id] === today));
         if (!pick) return;
         setAd(pick);
-        if (pick.format === 'popup' || pick.format === 'fullscreen') { shown[pick.id] = today; try { localStorage.setItem(PER_DAY, JSON.stringify(shown)); } catch { /* ignore */ } }
+        if (pick.format === 'popup' || pick.format === 'fullscreen' || pick.targeting?.frequency === 'once') { shown[pick.id] = today; try { localStorage.setItem(PER_DAY, JSON.stringify(shown)); } catch { /* ignore */ } }
         supabase.from('ad_events').insert({ campaign_id: pick.id, user_id: session.user.id, company_id: company?.id || null, event: 'impression' }).then(() => undefined);
       });
   }, [session, company, sub, lang]);

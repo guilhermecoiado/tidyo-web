@@ -175,3 +175,15 @@ textarea.k-input { padding: 12px 14px; min-height: 96px; resize: vertical; line-
 @keyframes kSpark { 0%,70% { opacity: 0; transform: scale(.4); } 78% { opacity: 1; transform: scale(1.15); } 90%,100% { opacity: 0; transform: scale(.8); } }
 @keyframes kBar { 0% { transform: translateX(-110%); } 100% { transform: translateX(260%); } }
 @media (prefers-reduced-motion: reduce) { .k-flip, .k-streak, .k-spark, .k-bar-run { animation: none; } .k-streak { opacity: 1; } }
+
+/* Superadmin: dark sidebar on desktop, a top bar with scrolling links below 1024 px */
+.sa-nav { flex: 0 0 232px; box-sizing: border-box; background: #0F1F1C; color: #C7D8D4; align-self: stretch; }
+.sa-nav-in { position: sticky; top: 0; min-height: 100dvh; box-sizing: border-box; padding: 20px 14px; display: flex; flex-direction: column; gap: 4px; }
+.sa-links { display: flex; flex-direction: column; gap: 4px; }
+@media (max-width: 1023px) {
+  .sa-nav { flex: 1 1 100%; min-width: 0; max-width: 100%; }
+  .sa-main { padding: 18px 16px 28px !important; }
+  .sa-nav-in { min-width: 0; min-height: 0; position: static; padding: 12px 12px 8px; }
+  .sa-links { flex-direction: row; overflow-x: auto; padding-bottom: 4px; }
+  .sa-exit { display: none; }
+}

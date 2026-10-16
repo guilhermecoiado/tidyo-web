@@ -102,6 +102,7 @@ function Routed() {
       <Route path="/avisos" element={<Gate need="any"><Central /></Gate>} />
       <Route path="/ajuda" element={<Gate need="any"><Help /></Gate>} />
       <Route path="/admin" element={<Gate need="admin"><Admin /></Gate>} />
+      <Route path="/admin/:section" element={<Gate need="admin"><Admin /></Gate>} />
       <Route path="/app/mais" element={<Gate need="staff"><Settings /></Gate>} />
       <Route path="/app/mais/:section" element={<Gate need="staff"><Settings /></Gate>} />
       <Route path="/app/conta" element={<Gate need="staff"><Account /></Gate>} />
