@@ -8,8 +8,8 @@ import { gKey, guessGender, type Gender } from './gender';
 export type Membership = { id: string; company_id: string; role: 'owner' | 'manager' | 'helper'; status: string; display_name: string; language: Lang; gender?: 'f' | 'm' | null };
 export type Company = { id: string; name: string; mode: 'residential' | 'commercial' | 'both'; solo: boolean; allow_push_team: boolean; allow_push_clients: boolean; default_language: Lang;
   timezone?: string; address?: string | null; state?: string | null; logo_path?: string | null; is_demo_data?: boolean; pricing?: Record<string, number>; auto_messages?: Record<string, boolean>;
-  cancellation_fee_cents?: number; cancellation_window_hours?: number };
-export type Subscription = { plan: string; status: string; trial_ends_at: string; has_commercial: boolean; commercial_tier: number | null };
+  cancellation_fee_cents?: number; cancellation_window_hours?: number; payment_info?: Record<string, string> };
+export type Subscription = { plan: string; status: string; trial_ends_at: string; has_commercial: boolean; commercial_tier: number | null; interval?: 'month' | 'year'; cancel_at_period_end?: boolean; current_period_end?: string | null };
 export type PortalClient = { client_id: string; company_id: string; name: string; language: Lang; company_name: string };
 export type Profile = { id: string; full_name: string; language: Lang };
 
@@ -76,8 +76,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     setMembership(m);
     if (m) {
       const [{ data: c }, { data: sb }] = await Promise.all([
-        supabase.from('companies').select('id, name, mode, solo, allow_push_team, allow_push_clients, default_language, timezone, address, state, logo_path, is_demo_data, pricing, auto_messages, cancellation_fee_cents, cancellation_window_hours').eq('id', m.company_id).maybeSingle(),
-        supabase.from('subscriptions').select('plan, status, trial_ends_at, has_commercial, commercial_tier').eq('company_id', m.company_id).maybeSingle(),
+        supabase.from('companies').select('id, name, mode, solo, allow_push_team, allow_push_clients, default_language, timezone, address, state, logo_path, is_demo_data, pricing, auto_messages, cancellation_fee_cents, cancellation_window_hours, payment_info').eq('id', m.company_id).maybeSingle(),
+        supabase.from('subscriptions').select('plan, status, trial_ends_at, has_commercial, commercial_tier, interval, cancel_at_period_end, current_period_end').eq('company_id', m.company_id).maybeSingle(),
       ]);
       setCompany(c as Company | null);
       setSub(sb as Subscription | null);

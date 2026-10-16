@@ -4,12 +4,15 @@ import { SessionProvider, useApp } from './lib/session';
 import { FullLoader } from './components/ui';
 import Auth, { NewPassword } from './pages/Auth';
 import Onboarding, { AcceptInvite } from './pages/Onboarding';
-import { Billing, More } from './pages/Owner';
 import Home from './screens/Home';
 import Agenda from './screens/Agenda';
 import NewJob from './screens/NewJob';
 import Clients from './screens/Clients';
 import NewClient from './screens/NewClient';
+import FinanceScreen from './screens/Finance';
+import Invoices from './screens/Invoices';
+import Settings from './screens/Settings';
+import Account from './screens/Account';
 import MyDay from './pages/MyDay';
 import Inbox, { Help } from './pages/Inbox';
 import Admin from './pages/Admin';
@@ -17,7 +20,7 @@ import { MfaPrompt } from './pages/Security';
 import Contracts from './pages/Contracts';
 import { ChatList, ChatThread } from './pages/Chat';
 import RoutesPage from './pages/Routes';
-import { Expenses, FinanceOverview, TeamPay } from './pages/Finance';
+import { Expenses, TeamPay } from './pages/Finance';
 import Landing from './pages/Landing';
 import JobWork from './pages/JobWork';
 import Portal, { PortalInvite } from './pages/Portal';
@@ -76,8 +79,8 @@ function Routed() {
       <Route path="/app/agenda/novo" element={<Gate need="staff"><NewJob /></Gate>} />
       <Route path="/app/clientes" element={<Gate need="staff"><Clients /></Gate>} />
       <Route path="/app/clientes/novo" element={<Gate need="staff"><NewClient /></Gate>} />
-      <Route path="/app/cobrancas" element={<Gate need="staff"><Billing /></Gate>} />
-      <Route path="/app/financas" element={<Gate need="staff"><FinanceOverview /></Gate>} />
+      <Route path="/app/cobrancas" element={<Gate need="staff"><Invoices /></Gate>} />
+      <Route path="/app/financas" element={<Gate need="staff"><FinanceScreen /></Gate>} />
       <Route path="/app/financas/despesas" element={<Gate need="staff"><Expenses /></Gate>} />
       <Route path="/app/financas/equipe" element={<Gate need="staff"><TeamPay /></Gate>} />
       <Route path="/app/contratos" element={<Gate need="staff"><Contracts /></Gate>} />
@@ -87,7 +90,9 @@ function Routed() {
       <Route path="/avisos" element={<Gate need="any"><Inbox /></Gate>} />
       <Route path="/ajuda" element={<Gate need="any"><Help /></Gate>} />
       <Route path="/admin" element={<Gate need="admin"><Admin /></Gate>} />
-      <Route path="/app/mais" element={<Gate need="staff"><More /></Gate>} />
+      <Route path="/app/mais" element={<Gate need="staff"><Settings /></Gate>} />
+      <Route path="/app/mais/:section" element={<Gate need="staff"><Settings /></Gate>} />
+      <Route path="/app/conta" element={<Gate need="staff"><Account /></Gate>} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
     </div>
