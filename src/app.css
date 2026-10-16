@@ -47,7 +47,7 @@ h3 { font-size: 16px; font-weight: 800; }
 .b-warn { background: var(--warn-bg); color: var(--warn-fg); }
 .b-danger { background: var(--danger-bg); color: var(--danger-fg); }
 .b-neutral { background: var(--neutral-bg); color: var(--neutral-fg); }
-.chips { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 2px; }
+.chips { display: flex; gap: 6px; flex-wrap: wrap; }
 .chip { min-height: 36px; padding: 0 14px; border-radius: var(--radius-pill); border: 1px solid var(--line); background: var(--surface); font-weight: 700; font-size: 13.5px; cursor: pointer; white-space: nowrap; }
 .chip[aria-pressed="true"] { background: var(--brand-dark); border-color: var(--brand-dark); color: #fff; }
 

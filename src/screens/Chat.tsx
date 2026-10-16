@@ -193,7 +193,7 @@ export default function ChatScreen() {
       <div style={{ background: '#FFFFFF', borderTop: `1px solid ${C.line}`, paddingBottom: 'env(safe-area-inset-bottom)' }}>
         <div style={{ maxWidth: 560, margin: '0 auto' }}>
           {quick.length > 0 && (
-            <div className="k-chips" style={{ padding: '8px 16px 0' }}>
+            <div className="k-chips scroll" style={{ padding: '8px 16px 0' }}>
               {quick.map((q) => <button key={q} className="k-chip" style={{ minHeight: 34, background: '#F4F7F6', fontWeight: 700 }} onClick={() => send(q)}>{q}</button>)}
             </div>
           )}

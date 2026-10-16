@@ -58,6 +58,7 @@ export default function Clients() {
     return !s || `${c.name} ${c.phone || ''} ${c.email || ''} ${c.properties.map((p) => `${p.address_line1} ${p.city}`).join(' ')}`.toLowerCase().includes(s);
   }), [clients, f, q, profit]); // eslint-disable-line react-hooks/exhaustive-deps
   const count = (k: string) => (clients || []).filter((c) => c.kind === k).length;
+  const lowCount = (clients || []).filter((c) => { const m = margin(c.id); return m != null && m < 0.25; }).length;
   const nextLine = (c: Client) => {
     const n = next.get(c.id);
     const days = (d: string | null | undefined) => (d ? Math.ceil((new Date(d + 'T12:00').getTime() - Date.now()) / 864e5) : null);
@@ -83,9 +84,9 @@ export default function Clients() {
           <span className="sr-only">{t('c.search')}</span>
           <input className="k-input" value={q} onChange={(e) => setQ(e.target.value)} placeholder={t('cl.searchPh')} />
         </label>
-        <div className="k-chips" role="group" aria-label={t('cl.filter')}>
-          {([['all', `${t('cl.all')} · ${clients?.length ?? 0}`], ['residential', `${t('cl.resPl')} · ${count('residential')}`], ['commercial', `${t('cl.comPl')} · ${count('commercial')}`], ['low', t('cl.lowMargin')]] as const).map(([id, label]) => (
-            <button key={id} className="k-chip" aria-pressed={f === id} onClick={() => setF(id)}>{label}</button>
+        <div className="k-statseg" role="group" aria-label={t('cl.filter')}>
+          {([['all', t('cl.all'), clients?.length ?? 0], ['residential', t('cl.resPl'), count('residential')], ['commercial', t('cl.comPl'), count('commercial')], ['low', t('cl.lowMargin'), lowCount]] as const).map(([id, label, n]) => (
+            <button key={id} type="button" aria-pressed={f === id} onClick={() => setF(id)}><b>{n}</b><span>{label}</span></button>
           ))}
         </div>
         <div className="k-card" style={{ padding: '2px 12px', gap: 0 }}>

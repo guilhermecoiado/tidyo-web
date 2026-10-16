@@ -5,7 +5,7 @@ import { supabase } from '../lib/supabase';
 import { useApp } from '../lib/session';
 import { Sheet } from '../components/ui';
 import { DateField, Select } from '../components/pickers';
-import { C, OwnerBar, PILL, SheetActions, Svg, I, usd } from '../components/kit';
+import { C, OwnerBar, PILL, SheetActions, Svg, I, usd, useUnbilled } from '../components/kit';
 import { getClients, type Client } from '../lib/data';
 import { hoursBetween, isoDate } from '../lib/format';
 import { compressImage } from '../lib/photos';
@@ -113,6 +113,7 @@ export default function Finance() {
   const [mo, setMo] = useState<Month>({ y: now.getFullYear(), m: now.getMonth() });
   const [d, setD] = useState<Data | null>(null);
   const [pendingExp, setPendingExp] = useState(0);
+  const unbilled = useUnbilled();
   const [sheet, setSheet] = useState<'' | 'exp' | 'inc' | 'rep' | 'month'>('');
   const [undo, setUndo] = useState<{ table: 'expenses' | 'payments'; id: string; label: string } | null>(null);
   const load = useCallback(async () => {
@@ -152,10 +153,16 @@ export default function Finance() {
               <Svg d={I.cal} size={14} color={C.accent} />{monthName.charAt(0).toUpperCase() + monthName.slice(1)}{isCurrent ? ` · ${t('fin.untilDay', { n: now.getDate() })}` : ''}
             </button>
           </div>
-          <Link to="/app/cobrancas" className="k-btn k-btn-line" style={{ minHeight: 40, borderRadius: 12, fontSize: 12.5, padding: '0 12px' }}>{t('fin.invoices')}</Link>
+          <Link to={unbilled ? '/app/cobrancas?tab=cobrar' : '/app/cobrancas'} className="k-btn k-btn-line" style={{ minHeight: 40, borderRadius: 12, fontSize: 12.5, padding: '0 12px', position: 'relative' }}>{t('fin.invoices')}{unbilled > 0 && <span className="k-badge sm" style={{ top: -7, right: -7 }}>{unbilled}</span>}</Link>
           <button className="k-btn k-btn-line" style={{ minHeight: 40, borderRadius: 12, fontSize: 12.5, padding: '0 12px' }} onClick={() => setSheet('rep')}>{t('fin.reports')}</button>
         </div>
 
+        {unbilled > 0 && (
+          <Link to="/app/cobrancas?tab=cobrar" className="k-note ok" style={{ textDecoration: 'none' }}>
+            <span>{t('tidy.uninvoicedText', { n: unbilled })}</span>
+            <span className="k-btn k-btn-sm k-btn-fill" style={{ minHeight: 40 }}>{t('job.chargeNow')}</span>
+          </Link>
+        )}
         {pendingExp > 0 && (
           <Link to="/app/financas/despesas" className="k-note" style={{ textDecoration: 'none' }}>
             <span>{t('tidy.reviewText', { n: pendingExp })}</span>
@@ -312,23 +319,33 @@ function ExpenseSheet({ onClose, onSaved }: { onClose: () => void; onSaved: (id:
   };
   return (
     <Sheet title={t('fin.addExp')} onClose={onClose}>
-      <label className="k-field"><span>{t('fin.valueUsd')}</span><input className="k-input" inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0.00" autoFocus style={{ minHeight: 52, background: C.bg, fontFamily: "'Bricolage Grotesque', sans-serif", fontSize: 22, fontWeight: 700 }} /></label>
-      <span className="k-lbl">{t('fin.category')}</span>
-      <div className="k-chips wrap">{EXP_CATS.map((c) => <button key={c} className="k-chip" style={{ minHeight: 38 }} aria-pressed={cat === c} onClick={() => setCat(c)}>{t(`expc.${c}`)}</button>)}</div>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-        <label className="k-field"><span>{t('exp.desc')}</span><input className="k-input" value={desc} onChange={(e) => setDesc(e.target.value)} /></label>
-        <label className="k-field"><span>{t('job.date')}</span><DateField label={t('job.date')} value={date} onChange={setDate} /></label>
+      <MoneyInput value={amount} onChange={setAmount} label={t('fin.valueUsd')} />
+      <div className="k-field"><span>{t('fin.category')}</span>
+        <div className="k-optgrid" role="group" aria-label={t('fin.category')}>{EXP_CATS.map((c) => <button key={c} type="button" aria-pressed={cat === c} onClick={() => setCat(c)}>{t(`expc.${c}`)}</button>)}</div>
       </div>
-      <div style={{ display: 'flex', gap: 8 }}>
-        <label className="k-btn k-btn-line" style={{ flex: 1, minHeight: 46, borderRadius: 13, borderStyle: file ? 'solid' : 'dashed', color: C.accent, fontSize: 13 }}>
-          {file ? `✓ ${t('day.receipt')}` : t('fin.receiptPhoto')}<input type="file" accept="image/*" capture="environment" className="sr-only" onChange={(e) => setFile(e.target.files?.[0] || null)} />
+      <label className="k-field"><span>{t('exp.desc')} <em className="k-opt">{t('c.optional')}</em></span><input className="k-input" value={desc} onChange={(e) => setDesc(e.target.value)} /></label>
+      <label className="k-field"><span>{t('job.date')}</span><DateField label={t('job.date')} value={date} onChange={setDate} /></label>
+      <div className="k-optrows">
+        <label className="k-optrow">
+          <span className="k-optrow-t"><b>{t('fin.receiptPhoto')}</b><small>{file ? file.name : t('c.optional')}</small></span>
+          <span className="k-btn k-btn-sm k-btn-line" style={{ color: C.accent }}>{file ? t('fin.change') : t('fin.addPhoto')}</span>
+          <input type="file" accept="image/*" capture="environment" className="sr-only" onChange={(e) => setFile(e.target.files?.[0] || null)} />
         </label>
-        <label className="k-btn k-btn-line check" style={{ flex: 1, minHeight: 46, borderRadius: 13, fontSize: 13, alignItems: 'center' }}>
-          <input type="checkbox" checked={monthly} onChange={() => setMonthly(!monthly)} />{t('fin.everyMonth')}
-        </label>
+        <div className="k-optrow">
+          <span className="k-optrow-t" id="exp-monthly"><b>{t('fin.everyMonth')}</b><small>{t('fin.everyMonthSub')}</small></span>
+          <button type="button" role="switch" aria-checked={monthly} aria-labelledby="exp-monthly" className="switch" onClick={() => setMonthly(!monthly)}><span /></button>
+        </div>
       </div>
       <SheetActions cancel={t('c.cancel')} onCancel={onClose} confirm={t('c.save')} onConfirm={save} disabled={busy || toCents(amount) <= 0} />
     </Sheet>
+  );
+}
+
+function MoneyInput({ value, onChange, label }: { value: string; onChange: (v: string) => void; label: string }) {
+  return (
+    <label className="k-field"><span>{label}</span>
+      <span className="k-money"><i>$</i><input inputMode="decimal" value={value} onChange={(e) => onChange(e.target.value.replace(/[^0-9.,]/g, ''))} placeholder="0.00" autoFocus /></span>
+    </label>
   );
 }
 
@@ -351,17 +368,16 @@ function IncomeSheet({ onClose, onSaved }: { onClose: () => void; onSaved: (id: 
   };
   return (
     <Sheet title={t('fin.addInc')} onClose={onClose}>
-      <span className="k-help">{t('fin.incHelp')}</span>
-      <label className="k-field"><span>{t('fin.valueUsd')}</span><input className="k-input" inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0.00" autoFocus style={{ minHeight: 52, background: C.bg, fontFamily: "'Bricolage Grotesque', sans-serif", fontSize: 22, fontWeight: 700 }} /></label>
-      <span className="k-lbl">{t('fin.method')}</span>
-      <div className="k-chips wrap">{METHODS.map((m) => <button key={m} className="k-chip" style={{ minHeight: 38 }} aria-pressed={method === m} onClick={() => setMethod(m)}>{t(`pay.${m}`)}</button>)}</div>
-      <label className="k-field"><span>{t('exp.desc')}</span><input className="k-input" value={desc} onChange={(e) => setDesc(e.target.value)} placeholder={t('fin.incPh')} /></label>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-        <label className="k-field"><span>{t('job.client')}</span>
-          <Select value={clientId} onChange={setClientId} label={t('job.client')}><option value="">—</option>{clients.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}</Select>
-        </label>
-        <label className="k-field"><span>{t('job.date')}</span><DateField label={t('job.date')} value={date} onChange={setDate} /></label>
+      <span className="k-help" style={{ marginTop: -4 }}>{t('fin.incHelp')}</span>
+      <MoneyInput value={amount} onChange={setAmount} label={t('fin.valueUsd')} />
+      <div className="k-field"><span>{t('fin.method')}</span>
+        <div className="k-optgrid sm" role="group" aria-label={t('fin.method')}>{METHODS.map((m) => <button key={m} type="button" aria-pressed={method === m} onClick={() => setMethod(m)}>{t(`pay.${m}`)}</button>)}</div>
       </div>
+      <label className="k-field"><span>{t('job.client')} <em className="k-opt">{t('c.optional')}</em></span>
+        <Select value={clientId} onChange={setClientId} label={t('job.client')}><option value="">{t('fin.noClient')}</option>{clients.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}</Select>
+      </label>
+      <label className="k-field"><span>{t('exp.desc')} <em className="k-opt">{t('c.optional')}</em></span><input className="k-input" value={desc} onChange={(e) => setDesc(e.target.value)} placeholder={t('fin.incPh')} /></label>
+      <label className="k-field"><span>{t('job.date')}</span><DateField label={t('job.date')} value={date} onChange={setDate} /></label>
       <SheetActions cancel={t('c.cancel')} onCancel={onClose} confirm={t('c.save')} onConfirm={save} disabled={busy || toCents(amount) <= 0} />
     </Sheet>
   );

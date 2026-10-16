@@ -63,7 +63,7 @@ class LandingLogic extends DCLogic {
       { title: 'O Tidy revisa o dia', sub: '5:00 · antes de você acordar', who: 'Cena 1 · a dona', capT: 'Você acorda com o dia já revisado.', capX: 'O Tidy encontrou um conflito de horário, faturas vencidas e uma helper perto do limite de horas. Um toque resolve, e todo mundo é avisado no próprio idioma.' },
       { title: 'Rota otimizada', sub: '−48 min no carro', who: 'Cena 2 · a rota', capT: 'Menos volante, mais casas limpas.', capX: 'A ordem das casas é calculada a partir do ponto de partida de cada helper. Você pode ajustar na mão e abrir direto no Waze, Google Maps ou Apple Maps.' },
       { title: 'Checklist com fotos', sub: 'Mesmo sem sinal', who: 'Cena 3 · a helper', capT: 'A helper só abre e trabalha, em espanhol.', capX: 'Tarefas por cômodo, fotos de antes e depois e horas contadas sozinhas. Sem internet? Tudo fica salvo e sincroniza quando o sinal volta.' },
-      { title: 'Fatura paga', sub: 'Cartão, ACH ou Zelle', who: 'Cena 4 · o cliente', capT: 'O cliente paga e avalia, em inglês.', capX: 'A fatura sai sozinha ao fim do job, com link de pagamento. Você recebe o aviso de pagamento e a avaliação, e o financeiro já está atualizado.' }
+      { title: 'Fatura paga', sub: 'Zelle, Venmo ou cheque', who: 'Cena 4 · o cliente', capT: 'O cliente paga e avalia, em inglês.', capX: 'Ao fim do job, você cobra em um toque e o cliente recebe a fatura em PDF no idioma dele. Quando ele paga, você dá baixa e o financeiro já está atualizado.' }
     ];
     const prog = S.tick / 24 * 100;
     const chapters = C.map((c, i) => {
@@ -129,7 +129,7 @@ class LandingLogic extends DCLogic {
     const feats = [
       [I.cal, 'Agenda que não se perde', 'Recorrência, conflitos detectados na hora e lembrete automático para o cliente confirmar ou reagendar.'],
       [I.route, 'Rotas otimizadas pelo Tidy', 'Menos tempo no carro: a ordem das casas é calculada a partir do ponto de partida de cada helper.'],
-      [I.dollar, 'Recebe de qualquer jeito', 'Cartão e ACH pela Stripe, e Zelle, Venmo, cheque ou dinheiro registrados em um toque.'],
+      [I.dollar, 'Recebe de qualquer jeito', 'Zelle, Venmo, cheque ou dinheiro registrados em um toque. Cartão e ACH pela Stripe chegam em breve.'],
       [I.cam, 'Prova do serviço', 'Checklist com fotos de antes e depois, horário e local. O cliente avalia em até 24 horas.'],
       [I.team, 'Horas e pagamento da equipe', 'Check-in e check-out, gorjetas, reembolsos e relatório pronto para pagar e para o 1099.'],
       [I.lang, 'Português, inglês e espanhol', 'Cada pessoa usa o app e recebe mensagens no próprio idioma, com tradução automática.'],
@@ -149,7 +149,7 @@ class LandingLogic extends DCLogic {
 
     const compare = [
       { icon: I.bolt, topic: 'Estabilidade', them: 'Bugs, telas que travam e o app que cai justo no meio do dia.', us: 'Feito para funcionar até sem internet. Status público do sistema e correções sem esperar meses.' },
-      { icon: I.card, topic: 'Pagamentos', them: 'Só aceita um jeito de pagar; o resto fica fora do sistema.', us: 'Cartão e ACH pela Stripe, e Zelle, Venmo, cheque e dinheiro registrados em um toque.' },
+      { icon: I.card, topic: 'Pagamentos', them: 'Só aceita um jeito de pagar; o resto fica fora do sistema.', us: 'Fatura em PDF com seus dados de Zelle, Venmo e cheque, e baixa em um toque. Cartão e ACH em breve.' },
       { icon: I.team, topic: 'Equipe e contas', them: 'Folha de pagamento e contabilidade “em breve”, e você de volta à planilha.', us: 'Horas, gorjetas e reembolsos somados; exportação para QuickBooks e relatório para o 1099.' },
       { icon: I.sparkle, topic: 'Design', them: 'Telas antigas e confusas que a equipe não quer abrir.', us: 'Moderno, feito para o celular, com uma ação principal por tela. Sem treinamento.' },
       { icon: I.phone, topic: 'Suporte', them: 'Só e-mail em inglês, e resposta dias depois.', us: 'Pessoas de verdade por chat, WhatsApp e chamada agendada, em português, inglês e espanhol.' },
@@ -200,13 +200,13 @@ class LandingLogic extends DCLogic {
       ['Preciso de cartão para testar?', 'Não. São 14 dias grátis com todos os recursos do plano escolhido. Você só cadastra o cartão se decidir continuar.'],
       ['Vocês importam meus clientes do app que eu uso hoje?', 'Sim, sem custo. Mande a planilha ou o arquivo exportado do seu app atual e a gente importa clientes, endereços, preços e recorrências. Você revisa antes de ativar.'],
       ['E se o app travar no meio do dia?', 'O app da helper funciona sem internet: checklist, fotos e horas ficam salvos no celular e sincronizam quando o sinal volta. A página de status do sistema é pública.'],
-      ['Como meus clientes pagam?', 'Por cartão ou ACH num link seguro da Stripe. Se o cliente pagar por Zelle, Venmo, cheque ou dinheiro, você registra em um toque e a fatura fecha.'],
+      ['Como meus clientes pagam?', 'O cliente recebe a fatura em PDF com os seus dados de Zelle, Venmo ou cheque. Quando ele pagar, você registra em um toque e a fatura fecha. Cartão e ACH pela Stripe chegam em breve.'],
       ['Ajuda com o pagamento da equipe e com o contador?', 'Sim. O app soma horas, gorjetas e reembolsos de cada helper, gera o relatório do período e o resumo anual para o 1099, e exporta para o QuickBooks.'],
       ['Como é o suporte?', 'Pessoas de verdade por chat e WhatsApp, em português, inglês e espanhol, e chamada agendada por vídeo ou telefone quando precisar.'],
       ['Minha equipe precisa baixar algum app?', 'Não. O Tidyo funciona no navegador e pode ser instalado na tela do celular em um toque. A helper entra por um link enviado no WhatsApp.'],
       ['Posso usar só para contratos comerciais?', 'Pode. O plano Comercial é vendido sozinho, com preço pela quantidade de contratos. Se atender casas também, o combo com o Pro tem 20% de desconto.'],
       ['Meus dados são meus?', 'São. Você exporta clientes, faturas e relatórios em CSV a qualquer momento, inclusive depois de cancelar.'],
-      ['Meus dados ficam seguros?', 'Cada empresa tem os dados isolados, o acesso usa verificação em duas etapas e os pagamentos passam pela Stripe; o Tidyo não guarda números de cartão.']
+      ['Meus dados ficam seguros?', 'Cada empresa tem os dados isolados, o acesso usa verificação em duas etapas e o Tidyo não guarda números de cartão.']
     ];
     const faqs = F.map(([q, a], i) => { const open = S.open === i; return { q, a, open, exp: open ? 'true' : 'false', rot: open ? 180 : 0, toggle: () => this.setState({ open: this.state.open === i ? -1 : i }) }; });
 
@@ -784,7 +784,7 @@ export default function Landing() {
           </Fragment>))}
         </div>
       </div>
-      <span style={{ fontSize: "13px", color: "#4E7770", textAlign: "center" }}>Preços em dólar americano, mais impostos quando aplicáveis. Taxas de cartão e ACH são da Stripe e aparecem na fatura do cliente ou na sua, como você escolher.</span>
+      <span style={{ fontSize: "13px", color: "#4E7770", textAlign: "center" }}>Preços em dólar americano, mais impostos quando aplicáveis.</span>
     </div>
   </section>
 

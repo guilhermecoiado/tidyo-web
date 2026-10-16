@@ -114,7 +114,7 @@ export default function Central() {
 
         {tab === 'notif' ? (
           <>
-            <div className="k-chips" style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 4 }}>
+            <div className="k-chips">
               {([['all', t('inv.all')], ['tidy', 'Tidy'], ['equipe', t('ce.team')], ['cliente', t('nav.clients')], ['tidyo', 'Tidyo']] as const).filter(([id]) => isStaff || id === 'all' || id === 'tidyo' || id === 'equipe').map(([id, label]) => (
                 <button key={id} className="k-chip dark" aria-pressed={filter === id} onClick={() => setFilter(id)} style={{ flex: 'none', minHeight: 36 }}>{label}</button>
               ))}
@@ -241,7 +241,7 @@ function BroadcastSheet({ contacts, companyId, onClose, onSent }: { contacts: Co
   return (
     <Sheet title={t('ce.bcTitle')} onClose={onClose}>
       <span style={{ fontSize: 13.5, color: C.muted, marginTop: -4 }}>{t('ce.bcText')}</span>
-      <div className="k-chips wrap" style={{ display: 'flex', gap: 6, flexWrap: 'wrap', justifyContent: 'flex-start', alignSelf: 'stretch' }}>
+      <div className="k-chips" style={{ display: 'flex', gap: 6, flexWrap: 'wrap', justifyContent: 'flex-start', alignSelf: 'stretch' }}>
         {opts.map(([id, label]) => <button key={id} className="k-chip dark" aria-pressed={aud === id} onClick={() => setAud(id)} style={{ minHeight: 38 }}>{label}</button>)}
       </div>
       <label className="k-field"><span>{t('hp.message')}</span>

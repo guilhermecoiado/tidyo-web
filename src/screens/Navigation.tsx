@@ -7,7 +7,7 @@ import { useApp } from '../lib/session';
 import { Sheet } from '../components/ui';
 import { C, I, Svg, hm } from '../components/kit';
 import { addDays, startOfDay } from '../lib/format';
-import { driveMin, km, loadMaps, miles, pt, type Pt } from '../lib/route';
+import { MAPS_ON, driveMin, km, loadMaps, miles, pt, type Pt } from '../lib/route';
 import { perform } from '../lib/offline';
 
 type NJob = { job_id: string; status: string; scheduled_start: string; route_position: number | null; client_name: string; address_line1: string; city: string; state: string; zip: string;
@@ -103,7 +103,7 @@ export default function Navigation() {
   // voice: read the instruction when it changes
   const said = useRef('');
   useEffect(() => {
-    if (muted || previewOf || !step || said.current === step.text || !('speechSynthesis' in window)) return;
+    if (!MAPS_ON || muted || previewOf || !step || said.current === step.text || !('speechSynthesis' in window)) return;
     said.current = step.text;
     const u = new SpeechSynthesisUtterance(`${step.dist}. ${step.text}`); u.lang = speechLang[lang] || 'en-US';
     window.speechSynthesis.cancel(); window.speechSynthesis.speak(u);
@@ -152,7 +152,8 @@ export default function Navigation() {
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0 }}>
           <span className="num nw" style={{ fontFamily: "'Bricolage Grotesque', sans-serif", fontSize: 22, fontWeight: 700 }}>{jobs === null ? '…' : next ? step?.dist || '' : t('nv.doneT')}</span>
-          <span style={{ fontSize: 14, fontWeight: 600, color: '#C7D8D4', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>{jobs === null ? t('c.loading') : next ? step?.text : t('nv.doneS')}</span>
+          <span style={{ fontSize: 14, fontWeight: 600, color: '#C7D8D4', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>{jobs === null ? t('c.loading') : next ? (MAPS_ON ? step?.text : t('nv.soonText')) : t('nv.doneS')}</span>
+          {!MAPS_ON && next && <span style={{ alignSelf: 'flex-start', marginTop: 4, fontSize: 10.5, fontWeight: 800, letterSpacing: '0.06em', textTransform: 'uppercase', color: '#0A3D35', background: '#5FD4C1', borderRadius: 6, padding: '3px 7px' }}>{t('c.soon')}</span>}
         </div>
       </div>
 
@@ -161,9 +162,9 @@ export default function Navigation() {
         <button style={ctl} aria-label={t('nv.center')} onClick={() => recenter.current()}>
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={C.ink} strokeWidth="2" strokeLinecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4" /><path d="M12 2v3M12 19v3M2 12h3M19 12h3" /></svg>
         </button>
-        <button style={ctl} aria-label={muted ? t('nv.voiceOn') : t('nv.voiceOff')} aria-pressed={!muted} onClick={toggleMute}>
+        {MAPS_ON && <button style={ctl} aria-label={muted ? t('nv.voiceOn') : t('nv.voiceOff')} aria-pressed={!muted} onClick={toggleMute}>
           <Svg d={muted ? 'M11 5 6 9H3v6h3l5 4zM22 9l-6 6M16 9l6 6' : 'M11 5 6 9H3v6h3l5 4zM15.5 8.5a5 5 0 0 1 0 7M19 5a10 10 0 0 1 0 14'} size={20} color={C.ink} />
-        </button>
+        </button>}
       </div>
       {previewOf && name && <span style={{ position: 'absolute', left: 12, top: 'calc(108px + env(safe-area-inset-top))', background: '#FFFFFF', borderRadius: 10, padding: '6px 10px', fontSize: 11.5, fontWeight: 800, color: '#3E4F4C', boxShadow: '0 2px 6px rgba(0,0,0,0.1)' }}>{t('nv.preview', { name })}</span>}
 

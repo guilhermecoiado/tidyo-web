@@ -114,3 +114,25 @@ export async function archiveClient(clientId: string) {
   const { error } = await supabase.from('clients').update({ archived_at: new Date().toISOString(), portal_user_id: null }).eq('id', clientId);
   if (error) throw error;
 }
+
+// ── Completed jobs with a price that are not on any live invoice ("a cobrar") ──
+export type Unbilled = { id: string; client_id: string; scheduled_start: string; price_cents: number; services: { name: string } | null; extras: { name: string; price_cents: number }[] | null; clients: { name: string; language: string } | null };
+export async function getUnbilled(companyId: string, clientId?: string): Promise<Unbilled[]> {
+  let q = supabase.from('jobs').select('id, client_id, scheduled_start, price_cents, services(name), extras, clients(name, language)')
+    .eq('company_id', companyId).eq('status', 'completed').gt('price_cents', 0).order('scheduled_start', { ascending: false }).limit(500);
+  if (clientId) q = q.eq('client_id', clientId);
+  const [j, l] = await Promise.all([q, supabase.from('invoice_lines').select('job_id, invoices(status)').eq('company_id', companyId).not('job_id', 'is', null)]);
+  const billed = new Set(((l.data || []) as unknown as { job_id: string; invoices: { status: string } | null }[]).filter((r) => r.invoices?.status !== 'void').map((r) => r.job_id));
+  const list = ((j.data || []) as unknown as Unbilled[]).filter((x) => !billed.has(x.id));
+  if (!clientId) { unbilledCache = { at: Date.now(), company: companyId, n: list.length }; window.dispatchEvent(new Event('tidyo:unbilled')); }
+  return list;
+}
+let unbilledCache: { at: number; company: string; n: number } | null = null;
+let unbilledInflight: Promise<unknown> | null = null;
+/** Cached count for badges (refreshes at most once a minute, or when invalidated) */
+export function unbilledCount(companyId: string): number | null {
+  const fresh = unbilledCache && unbilledCache.company === companyId && Date.now() - unbilledCache.at < 60_000;
+  if (!fresh && !unbilledInflight) unbilledInflight = getUnbilled(companyId).catch(() => undefined).finally(() => { unbilledInflight = null; });
+  return unbilledCache && unbilledCache.company === companyId ? unbilledCache.n : null;
+}
+export function invalidateUnbilled() { if (unbilledCache) unbilledCache.at = 0; window.dispatchEvent(new Event('tidyo:unbilled')); }

@@ -193,7 +193,7 @@ export default function NewClient() {
             ))}
           </div>
           <span style={{ fontSize: 13, fontWeight: 800 }}>{isCom ? t('nc.floors') : t('nc.details')}</span>
-          <div className="k-chips wrap">
+          <div className="k-chips">
             {(isCom ? floorDefs : resChipDefs).map(([k, label]) => {
               const st = isCom ? floors : resChips, set = isCom ? setFloors : setResChips;
               return <button key={k} className="k-chip" style={{ minHeight: 40 }} aria-pressed={!!st[k]} onClick={() => set({ ...st, [k]: !st[k] })}>{label}</button>;

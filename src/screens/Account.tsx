@@ -122,7 +122,7 @@ export default function Account() {
       {sheet === 'cancel' && (
         <Sheet title={t('acc.cancelQ')} onClose={() => setSheet('')}>
           <span style={{ fontSize: 13.5, color: C.muted, lineHeight: 1.5 }}>{t('acc.cancelText', { d: endTxt })}</span>
-          <div className="k-chips wrap">{(['price', 'closing', 'other', 'hard'] as const).map((r) => <button key={r} className="k-chip" style={{ minHeight: 38 }} aria-pressed={reason === r} onClick={() => setReason(r)}>{t(`acc.r.${r}`)}</button>)}</div>
+          <div className="k-chips">{(['price', 'closing', 'other', 'hard'] as const).map((r) => <button key={r} className="k-chip" style={{ minHeight: 38 }} aria-pressed={reason === r} onClick={() => setReason(r)}>{t(`acc.r.${r}`)}</button>)}</div>
           {(reason === 'price' || reason === 'closing') && <span style={{ fontSize: 13, color: '#0B6B5F', background: '#DDF1EC', borderRadius: 12, padding: '10px 12px', fontWeight: 700 }}>{t('acc.pauseTip')}</span>}
           <SheetActions cancel={t('acc.keep')} onCancel={() => setSheet('')} confirm={t('acc.cancel')} onConfirm={cancel} danger />
         </Sheet>

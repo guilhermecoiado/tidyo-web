@@ -7,8 +7,8 @@ import { Confirm, Sheet } from '../components/ui';
 import { C, Pill, colorOf, hm, jobTone, shortName, usd } from '../components/kit';
 import { ChecklistView, PhotoStrip, Stars } from '../components/proof';
 import { getChecklist, getJobPhotos, type CheckItem, type Photo } from '../lib/photos';
-import { createInvoice, memberIndex, type Job, type Member } from '../lib/data';
-import { addDays, isoDate } from '../lib/format';
+import { memberIndex, type Job, type Member } from '../lib/data';
+import { NewCharge } from './Invoices';
 
 export function recurrenceText(job: Job, t: (k: string, p?: Record<string, string | number>) => string) {
   if (job.contract_id) return t('job.recContract');
@@ -27,6 +27,17 @@ export function JobSheet({ job, members, onClose, onChanged }: { job: Job; membe
   const [busy, setBusy] = useState(false);
   const [ask, setAsk] = useState(false);
   const [more, setMore] = useState(false);
+  const [charging, setCharging] = useState(false);
+  // completed job with a price: is it already on a (non-void) invoice?
+  const [billed, setBilled] = useState<{ number: string } | null | undefined>(undefined);
+  const billable = job.status === 'completed' && job.price_cents > 0 && !job.contract_id;
+  useEffect(() => {
+    if (!billable) return;
+    supabase.from('invoice_lines').select('invoices(number, status)').eq('job_id', job.id).then(({ data }) => {
+      const inv = ((data || []) as unknown as { invoices: { number: string; status: string } | null }[]).map((r) => r.invoices).find((i) => i && i.status !== 'void');
+      setBilled(inv ? { number: inv.number } : null);
+    });
+  }, [job.id, billable]);
   useEffect(() => {
     if (job.status === 'scheduled') return;
     getJobPhotos(job.id).then(setPhotos).catch(() => undefined);
@@ -50,20 +61,13 @@ export function JobSheet({ job, members, onClose, onChanged }: { job: Job; membe
     setBusy(false);
     if (error) toast(tErr(error.message)); else { toast(t('c.saved')); onChanged(); }
   };
-  const invoice = async () => {
-    if (!company) return;
-    setBusy(true);
-    try {
-      await createInvoice(company.id, job.client_id, [{ description: `${job.services?.name || t('job.details')} · ${new Date(job.scheduled_start).toLocaleDateString(lang, { day: 'numeric', month: 'short' })}`, unit_cents: job.price_cents, job_id: job.id }], isoDate(addDays(new Date(), 7)));
-      toast(t('inv.created')); onChanged();
-    } catch (e) { toast(tErr((e as Error).message)); }
-    setBusy(false);
-  };
   const message = async () => {
     if (!helper?.user_id || !company) return;
     const { data, error } = await supabase.rpc('open_conversation', { p_company: company.id, p_with: helper.user_id });
     if (error) toast(tErr(error.message)); else nav(`/mensagens/${data}`);
   };
+
+  if (charging) return <NewCharge preset={job.client_id} jobId={job.id} onClose={() => setCharging(false)} onSaved={() => { setCharging(false); onChanged(); }} />;
 
   return (
     <Sheet title={job.clients?.name || ''} onClose={onClose}>
@@ -85,6 +89,16 @@ export function JobSheet({ job, members, onClose, onChanged }: { job: Job; membe
             : <span className="k-s125 k-muted">{job.rating_status === 'auto_approved' ? t('ck.autoApproved') : t('ck.waitingRating')}</span>}
         </div>
       )}
+      {billable && billed === null && (
+        <div className="k-chargebox">
+          <span style={{ display: 'flex', flexDirection: 'column', gap: 2, flex: 1, minWidth: 0 }}>
+            <b style={{ fontSize: 14 }}>{t('job.toBillT')}</b>
+            <span className="k-s125" style={{ color: '#0B6B5F' }}>{t('job.toBillS', { v: usd(job.price_cents, true) })}</span>
+          </span>
+          <button className="k-btn k-btn-fill nw" style={{ minHeight: 44, padding: '0 16px' }} onClick={() => setCharging(true)}>{t('job.chargeNow')}</button>
+        </div>
+      )}
+      {billable && billed && <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}><Pill tone="ok">{t('job.billed')}</Pill><span className="k-s125 k-muted">{billed.number}</span></div>}
       {photos.length > 0 && <PhotoStrip title={t('ck.photos')} photos={photos} />}
       {items && items.length > 0 && <details className="k-kv"><summary style={{ fontWeight: 800, cursor: 'pointer', minHeight: 28 }}>{t('ck.progress', { done: items.filter((i) => i.done_at).length, total: items.length })}</summary><ChecklistView items={items} editable={false} /></details>}
 
@@ -100,7 +114,7 @@ export function JobSheet({ job, members, onClose, onChanged }: { job: Job; membe
           {(job.status === 'scheduled' || job.status === 'in_progress') && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
               <span className="k-lbl">{t('job.helper')}</span>
-              <div className="k-chips wrap">
+              <div className="k-chips">
                 {[{ id: '', display_name: t('c.unassigned') } as Member, ...members.filter((m) => m.status === 'active')].map((m) => (
                   <button key={m.id || 'none'} className="k-chip" aria-pressed={(helperId || '') === m.id} disabled={busy} onClick={() => assign(m.id)}>
                     {m.id && <span className="k-dot" style={{ background: colorOf(memberIndex(members, m.id))[0] }} />}{m.id ? shortName(m.display_name) : m.display_name}
@@ -110,7 +124,6 @@ export function JobSheet({ job, members, onClose, onChanged }: { job: Job; membe
             </div>
           )}
           {(job.status === 'scheduled' || job.status === 'in_progress') && <button className="k-btn k-btn-fill" disabled={busy} onClick={() => setStatus('completed')}>{t('job.markDone')}</button>}
-          {job.status === 'completed' && job.price_cents > 0 && <button className="k-btn k-btn-fill" disabled={busy} onClick={invoice}>{t('job.invoice')}</button>}
           {job.status === 'scheduled' && <button className="k-btn k-btn-line" style={{ color: '#9F1F14' }} onClick={() => setAsk(true)}>{t('job.cancelJob')}</button>}
         </div>
       )}

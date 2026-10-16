@@ -52,6 +52,9 @@ export function navUrl(origin: Pt | null, stops: { address: string }[]) {
   return `https://www.google.com/maps/dir/?api=1${origin ? `&origin=${origin.lat},${origin.lng}` : ''}&destination=${encodeURIComponent(dest)}${way ? `&waypoints=${encodeURIComponent(way)}` : ''}&travelmode=driving`;
 }
 
+/** In-app maps and turn-by-turn need the browser key; without it they show as "coming soon" */
+export const MAPS_ON = !!import.meta.env.VITE_GOOGLE_MAPS_KEY;
+
 let mapsPromise: Promise<boolean> | null = null;
 export function loadMaps() {
   const key = import.meta.env.VITE_GOOGLE_MAPS_KEY;

@@ -428,7 +428,7 @@ function RequestSheet({ company, onClose, onSent }: { company: string; onClose: 
   };
   return (
     <Sheet title={t('po.newRequest')} onClose={onClose}>
-      <div className="k-chips wrap" role="group" aria-label={t('po.newRequest')} style={{ justifyContent: 'flex-start', alignSelf: 'stretch' }}>
+      <div className="k-chips" role="group" aria-label={t('po.newRequest')} style={{ justifyContent: 'flex-start', alignSelf: 'stretch' }}>
         {(['extra', 'issue', 'supply', 'other'] as const).map((k) => (
           <button key={k} aria-pressed={kind === k} onClick={() => setKind(k)} style={{ minHeight: 40, padding: '0 12px', borderRadius: 999, border: `1px solid ${kind === k ? NAVY : C.line}`, background: kind === k ? NAVY : '#FFFFFF', color: kind === k ? '#FFFFFF' : C.ink, fontWeight: 800, fontSize: 12.5, cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>{t(`po.rk.${k}`)}</button>
         ))}

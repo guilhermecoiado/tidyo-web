@@ -230,7 +230,7 @@ function ExpenseSheet({ owner, onClose, onSent }: { owner: string; onClose: () =
       <label className="k-field"><span>{t('md.amount')}</span>
         <input className="k-input num" inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0.00" style={{ minHeight: 52, background: '#F4F7F6', fontFamily: "'Bricolage Grotesque', sans-serif", fontSize: 22, fontWeight: 800 }} />
       </label>
-      <div className="k-chips wrap" role="group" aria-label={t('day.expense')}>
+      <div className="k-chips" role="group" aria-label={t('day.expense')}>
         {([['gas', t('exp.gas')], ['supplies', t('md.product')], ['parking', t('exp.parking')], ['other', t('exp.other')]] as const).map(([c, label]) => <button key={c} type="button" className="k-chip" aria-pressed={cat === c} onClick={() => setCat(c)} style={{ minHeight: 40 }}>{label}</button>)}
       </div>
       <label style={{ minHeight: 48, borderRadius: 14, border: '1.5px dashed #9DB5B0', background: '#FFFFFF', color: C.accent, fontWeight: 800, fontSize: 13.5, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '0 12px', textAlign: 'center' }}>
@@ -282,7 +282,7 @@ export function ProblemSheet({ job, onClose }: { job: HJob; onClose: () => void 
   return (
     <Sheet title={t('day.problem')} onClose={onClose}>
       <span className="k-lbl">{t('day.problemCat')}</span>
-      <div className="k-chips wrap" role="group" aria-label={t('day.problemCat')}>
+      <div className="k-chips" role="group" aria-label={t('day.problemCat')}>
         {[['no_access', 'day.noAccess'], ['damage', 'day.damage'], ['supplies', 'day.supplies'], ['other', 'day.otherIssue']].map(([v, k]) => <button key={v} className="k-chip" aria-pressed={cat === v} onClick={() => setCat(v)} style={{ minHeight: 40 }}>{t(k)}</button>)}
       </div>
       <label className="k-field"><span>{t('exp.desc')}</span><textarea className="k-input" rows={3} value={desc} onChange={(e) => setDesc(e.target.value)} style={{ minHeight: 84, resize: 'none' }} /></label>

@@ -110,7 +110,7 @@ export default function NewJob() {
 
   const dates = useMemo(() => {
     const out: Date[] = []; let d = startOfDay(new Date());
-    while (out.length < 14) { if (d.getDay() !== 0) out.push(d); d = addDays(d, 1); }
+    while (out.length < 12) { if (d.getDay() !== 0) out.push(d); d = addDays(d, 1); }
     const cur = new Date(`${date}T00:00`);
     if (!out.some((x) => x.getTime() === cur.getTime())) out.unshift(cur);
     return out;
@@ -199,13 +199,13 @@ export default function NewJob() {
 
         <section className="k-field" style={{ gap: 8 }}>
           <span className="k-sec"><span>{t('job.client')}</span></span>
-          <div className="k-chips wrap">
+          <div className="k-chips">
             {shownClients.map((c) => <button key={c.id} className="k-chip" style={{ minHeight: 40, fontSize: 13 }} aria-pressed={c.id === clientId} onClick={() => setClientId(c.id)} disabled={!!editJob && c.id !== clientId}>{c.name}</button>)}
             {!editJob && clients && clients.length > 6 && !all && <button className="k-chip" style={{ minHeight: 40, fontSize: 13 }} onClick={() => setAll(true)}>{t('job.moreClients', { n: clients.length - 6 })}</button>}
             {!editJob && <Link to="/app/clientes/novo" className="k-chip" style={{ minHeight: 40, fontSize: 13, border: `1px dashed ${C.accent}`, color: C.accent, textDecoration: 'none' }}>+ {t('cl.new')}</Link>}
           </div>
           {client && client.properties.length > 1 && (
-            <div className="k-chips wrap">{client.properties.map((p) => <button key={p.id} className="k-chip light" aria-pressed={p.id === property?.id} onClick={() => setPropertyId(p.id)}>{p.label} · {p.address_line1}</button>)}</div>
+            <div className="k-chips">{client.properties.map((p) => <button key={p.id} className="k-chip light" aria-pressed={p.id === property?.id} onClick={() => setPropertyId(p.id)}>{p.label} · {p.address_line1}</button>)}</div>
           )}
           {facts && <span className="k-s125 k-muted">{facts}</span>}
         </section>
@@ -231,11 +231,11 @@ export default function NewJob() {
 
         <section className="k-field" style={{ gap: 8 }}>
           <span className="k-sec"><span>{t('job.when')}</span></span>
-          <div className="k-chips">
+          <div className="k-dategrid">
             {dates.map((d) => {
               const on = isoDate(d) === date;
               return (
-                <button key={d.toISOString()} aria-pressed={on} onClick={() => setDate(isoDate(d))} style={{ flex: 'none', width: 56, minHeight: 60, borderRadius: 14, border: `1px solid ${on ? C.ink : C.line}`, background: on ? C.ink : '#FFFFFF', color: on ? '#FFFFFF' : C.ink, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2, cursor: 'pointer', fontFamily: 'inherit' }}>
+                <button key={d.toISOString()} aria-pressed={on} onClick={() => setDate(isoDate(d))} style={{ minWidth: 0, minHeight: 56, borderRadius: 12, border: `1px solid ${on ? C.ink : C.line}`, background: on ? C.ink : '#FFFFFF', color: on ? '#FFFFFF' : C.ink, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2, cursor: 'pointer', fontFamily: 'inherit' }}>
                   <span style={{ fontSize: 11, fontWeight: 700 }}>{d.toLocaleDateString(lang, { weekday: 'short' }).replace('.', '').replace(/^./, (c) => c.toUpperCase()).slice(0, 3)}</span>
                   <span style={{ fontFamily: "'Bricolage Grotesque', sans-serif", fontSize: 18, fontWeight: 700 }}>{d.getDate()}</span>
                 </button>
@@ -331,7 +331,7 @@ export default function NewJob() {
               <div><span>{t('job.kvTotal')}</span><span className="num">{service?.id === 'contract' ? t('job.inContract') : usd(total)}</span></div>
             </div>
             <span style={{ fontSize: 12.5, fontWeight: 800 }}>{t('job.notifyBy')}</span>
-            <div className="k-chips wrap">
+            <div className="k-chips">
               {[['wa', 'WhatsApp'], ['sms', 'SMS'], ['email', 'Email']].map(([id, label]) => <button key={id} className="k-chip" style={{ minHeight: 40 }} aria-pressed={!!channels[id]} onClick={() => setChannels({ ...channels, [id]: !channels[id] })}>{label}</button>)}
             </div>
             {error && <span className="k-err" role="alert">{error}</span>}

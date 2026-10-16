@@ -5,7 +5,7 @@ import { supabase } from '../lib/supabase';
 import { useApp } from '../lib/session';
 import { Sheet } from '../components/ui';
 import { Avatar, BELL, C, Empty, Fab, I, LogoMark, OwnerBar, Pill, SheetActions, SPARK, Svg, colorOf, compactMoney, dur, hm, jobTone, shortName, usd } from '../components/kit';
-import { findConflicts, getClients, getInvoices, getJobs, getMembers, getServices, isOverdue, jobMinutes, memberIndex, type Client, type Invoice, type Job, type Member } from '../lib/data';
+import { findConflicts, getClients, getInvoices, getJobs, getMembers, getServices, getUnbilled, isOverdue, jobMinutes, memberIndex, type Client, type Invoice, type Job, type Member } from '../lib/data';
 import { addDays, startOfDay } from '../lib/format';
 import { healthOf, loadFinance, marginOf } from '../lib/finance';
 import { optimize, total, driveMin, pt, type Pt } from '../lib/route';
@@ -44,12 +44,10 @@ export function TidySheet({ title, sub, items, onClose }: { title: string; sub: 
         return (
           <div key={it.id} className="k-tidy-item">
             <span className="k-tidy-tag" style={{ background: bg, color: fg }}>{t(`tidy.k.${it.kind}`)}</span>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 3, flex: 1, minWidth: 0 }}>
-              <span style={{ fontWeight: 700, fontSize: 14, lineHeight: 1.35 }}>{it.title}</span>
-              {it.detail && <span style={{ fontSize: 12.5, color: C.faint, lineHeight: 1.4 }}>{it.detail}</span>}
-              {it.to && <Link to={it.to} onClick={onClose} className="k-btn k-btn-sm k-btn-mint" style={{ alignSelf: 'flex-start', marginTop: 6 }}>{it.toLabel}</Link>}
-              {it.act && <button onClick={it.act} className="k-btn k-btn-sm" style={{ alignSelf: 'flex-start', marginTop: 6, color: '#EAF3F1', background: 'transparent', border: '1px solid #3B5654' }}>{it.cta}</button>}
-            </div>
+            <span style={{ fontWeight: 700, fontSize: 14, lineHeight: 1.35 }}>{it.title}</span>
+            {it.detail && <span style={{ fontSize: 12.5, color: C.faint, lineHeight: 1.4 }}>{it.detail}</span>}
+            {it.to && <Link to={it.to} onClick={onClose} className="k-btn k-btn-sm k-btn-mint k-tidy-cta">{it.toLabel}</Link>}
+            {it.act && <button onClick={it.act} className="k-btn k-btn-sm k-tidy-cta ghost">{it.cta}</button>}
           </div>
         );
       })}
@@ -138,7 +136,7 @@ function OwnerHome({ members, clients }: { members: Member[]; clients: Client[] 
   const [week, setWeek] = useState<Job[]>([]);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [health, setHealth] = useState<number | null | undefined>(undefined);
-  const [extra, setExtra] = useState<{ contracts: Contract[]; pendingExp: number; uninvoiced: number; routeSave: { min: number; per: { name: string; min: number }[] } | null }>({ contracts: [], pendingExp: 0, uninvoiced: 0, routeSave: null });
+  const [extra, setExtra] = useState<{ contracts: Contract[]; pendingExp: number; uninvoiced: number; uninvoicedCents?: number; routeSave: { min: number; per: { name: string; min: number }[] } | null }>({ contracts: [], pendingExp: 0, uninvoiced: 0, routeSave: null });
   const [tidy, setTidy] = useState(false);
   const [conflictOpen, setConflictOpen] = useState(false);
   const [open, setOpen] = useState<Job | null>(null);
@@ -153,13 +151,11 @@ function OwnerHome({ members, clients }: { members: Member[]; clients: Client[] 
       loadFinance(company.id, addDays(today, -30), addDays(today, 1)),
     ]);
     setJobs(j.filter((x) => x.status !== 'canceled')); setWeek(w); setInvoices(inv); setHealth(healthOf(fin));
-    const [cts, exp, recent, lines] = await Promise.all([
+    const [cts, exp, unbilled] = await Promise.all([
       company.mode !== 'residential' ? getContracts(company.id) : Promise.resolve([] as Contract[]),
       supabase.from('expenses').select('id', { count: 'exact', head: true }).eq('company_id', company.id).eq('status', 'pending'),
-      getJobs(company.id, addDays(today, -30), addDays(today, 1)),
-      supabase.from('invoice_lines').select('job_id').eq('company_id', company.id).not('job_id', 'is', null),
+      getUnbilled(company.id),
     ]);
-    const invoiced = new Set(((lines.data || []) as { job_id: string }[]).map((r) => r.job_id));
     // tomorrow's routes: how much driving the optimiser saves, per helper
     const tmr = w.filter((x) => x.status !== 'canceled' && startOfDay(new Date(x.scheduled_start)).getTime() === addDays(today, 1).getTime());
     const { data: plans } = await supabase.from('route_plans').select('membership_id').eq('company_id', company.id).eq('plan_date', addDays(today, 1).toISOString().slice(0, 10));
@@ -174,7 +170,7 @@ function OwnerHome({ members, clients }: { members: Member[]; clients: Client[] 
     }
     setExtra({
       contracts: cts, pendingExp: exp.count || 0,
-      uninvoiced: recent.filter((x) => x.status === 'completed' && x.price_cents > 0 && !invoiced.has(x.id)).length,
+      uninvoiced: unbilled.length, uninvoicedCents: unbilled.reduce((s, x) => s + x.price_cents, 0),
       routeSave: per.length ? { min: per.reduce((s, p) => s + p.min, 0), per } : null,
     });
   }, [company, members]);
@@ -202,7 +198,7 @@ function OwnerHome({ members, clients }: { members: Member[]; clients: Client[] 
       cta: t('tidy.seeInvoices'), act: () => nav('/app/cobrancas') }] : []),
     ...(unassigned.length ? [{ id: 'un', kind: 'team', title: t('tidy.unassignedText', { n: unassigned.length }), cta: t('tidy.open'), act: () => { setTidy(false); setOpen(unassigned[0]); } }] : []),
     ...(extra.pendingExp ? [{ id: 'exp', kind: 'review', title: t('tidy.reviewText', { n: extra.pendingExp }), cta: t('tidy.open'), act: () => nav('/app/financas/despesas') }] : []),
-    ...(extra.uninvoiced ? [{ id: 'ui', kind: 'invoice', title: t('tidy.uninvoicedText', { n: extra.uninvoiced }), cta: t('tidy.open'), act: () => nav('/app/cobrancas') }] : []),
+    ...(extra.uninvoiced ? [{ id: 'ui', kind: 'invoice', title: t('tidy.uninvoicedText', { n: extra.uninvoiced }), detail: t('tidy.uninvoicedD', { v: usd(extra.uninvoicedCents || 0) }), cta: t('tidy.billNow'), act: () => nav('/app/cobrancas?tab=cobrar') }] : []),
   ];
   const pending = insights.length;
 
@@ -229,7 +225,7 @@ function OwnerHome({ members, clients }: { members: Member[]; clients: Client[] 
           <div className="k-kpi"><span className="k-kpi-l">{t('home.receivable')}</span><span className="k-kpi-v">{compactMoney(receivable)}</span><span className="k-kpi-n">{t('home.thisWeek')}</span></div>
           <Link to="/app/financas" className="k-kpi" style={{ textDecoration: 'none', color: 'inherit' }}>
             <span className="k-kpi-l">{t('home.kHealth')}</span>
-            <span className="k-kpi-v" style={{ color: health == null ? C.muted : health >= 70 ? C.accent : health >= 45 ? '#8A4B05' : '#B8400C' }}>{health == null ? '–' : health}<span style={{ fontSize: 13, color: C.muted }}>/100</span></span>
+            <span className="k-kpi-v" style={{ color: health == null ? C.muted : health >= 70 ? C.accent : health >= 45 ? '#8A4B05' : '#B8400C' }}>{health == null ? '–' : <>{health}<span style={{ fontSize: 13, color: C.muted }}>/100</span></>}</span>
             <div className="k-bar5"><div style={{ width: `${health || 0}%`, background: health == null || health >= 70 ? C.accent : health >= 45 ? '#E0A341' : '#B8400C' }} /></div>
           </Link>
         </div>
@@ -320,7 +316,7 @@ function ConflictSheet({ conflict, jobs, members, onClose, onDone, tErr }: { con
         </div>
       )}
       {more && options.length > 1 && (
-        <div className="k-chips wrap" role="group" aria-label={t('job.helper')}>
+        <div className="k-chips" role="group" aria-label={t('job.helper')}>
           {options.map((o, i) => <button key={o.m.id} className="k-chip" aria-pressed={i === pick} onClick={() => { setPick(i); setMore(false); }}>{shortName(o.m.display_name)}</button>)}
         </div>
       )}

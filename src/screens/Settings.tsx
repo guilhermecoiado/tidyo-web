@@ -545,7 +545,7 @@ function TeamPage() {
       </div>
       <div style={{ background: C.bg, border: `1px solid ${C.line}`, borderRadius: 16, padding: 14, display: 'flex', flexDirection: 'column', gap: 10 }}>
         <span style={{ fontWeight: 800, fontSize: 14.5 }}>{t('team.inviteSomeone')}</span>
-        <div className="k-chips wrap">
+        <div className="k-chips">
           {([['helper', t('team.helper')], ...(membership?.role === 'owner' ? [['manager', t('team.manager')]] : []), ['client', t('team.clientPortal')]] as [typeof role, string][]).map(([id, label]) => (
             <button key={id} className="k-chip" style={{ minHeight: 38 }} aria-pressed={role === id} onClick={() => { setRole(id); setCopied(false); }}>{label}</button>
           ))}
@@ -586,7 +586,7 @@ function MemberSheet({ m, onClose, onChanged }: { m: Member; members: Member[]; 
   const differs = tg(`team.${m.role}`, 'f') !== tg(`team.${m.role}`, 'm');
   return (
     <Sheet title={m.display_name} onClose={onClose}>
-      <div className="k-chips wrap" style={{ marginTop: -6 }}><span className="k-pill" style={{ background: PILL.neutral[0], color: PILL.neutral[1] }}>{tg(`team.${m.role}`, g)}</span><span className="k-pill" style={{ background: m.status === 'active' ? PILL.ok[0] : PILL.warn[0], color: m.status === 'active' ? PILL.ok[1] : PILL.warn[1] }}>{m.status === 'active' ? tg('team.active', g) : t('team.invited')}</span></div>
+      <div className="k-chips" style={{ marginTop: -6 }}><span className="k-pill" style={{ background: PILL.neutral[0], color: PILL.neutral[1] }}>{tg(`team.${m.role}`, g)}</span><span className="k-pill" style={{ background: m.status === 'active' ? PILL.ok[0] : PILL.warn[0], color: m.status === 'active' ? PILL.ok[1] : PILL.warn[1] }}>{m.status === 'active' ? tg('team.active', g) : t('team.invited')}</span></div>
       {differs && <><span className="k-lbl">{t('team.address')}</span><Segment value={g} onChange={saveG} label={t('team.address')} options={[{ value: 'f', label: tg(`team.${m.role}`, 'f') }, { value: 'm', label: tg(`team.${m.role}`, 'm') }]} /></>}
       {m.role !== 'owner' && (
         <>

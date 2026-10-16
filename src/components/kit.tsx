@@ -1,7 +1,8 @@
 // Building blocks taken 1:1 from the canvas "Tidyo App Screens" (sizes, colours, radii).
-import type { CSSProperties, ReactNode } from 'react';
+import { useEffect, useState, type CSSProperties, type ReactNode } from 'react';
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useApp } from '../lib/session';
+import { unbilledCount } from '../lib/data';
 
 export const C = {
   bg: '#F4F7F6', ink: '#0F1F1C', muted: '#566965', line: '#DFE7E5', soft: '#EEF2F1', track: '#E4ECEA',
@@ -58,14 +59,24 @@ export const I = {
 };
 
 // ── Bottom bar (78 px + safe area, 5 items for the office, 4 for the field team) ──
+/** Completed jobs still waiting for an invoice (badge on Finanças / Faturas) */
+export function useUnbilled() {
+  const { company, membership } = useApp();
+  const staff = membership?.role === 'owner' || membership?.role === 'manager';
+  const [, tick] = useState(0);
+  useEffect(() => { const f = () => tick((x) => x + 1); window.addEventListener('tidyo:unbilled', f); return () => window.removeEventListener('tidyo:unbilled', f); }, []);
+  return company && staff ? unbilledCount(company.id) || 0 : 0;
+}
+
 export function OwnerBar() {
   const { t } = useApp();
   const { pathname } = useLocation();
-  const items: [string, string, string, boolean?][] = [
+  const unbilled = useUnbilled();
+  const items: [string, string, string, boolean?, number?][] = [
     ['/app', I.home, t('nav.today')],
     ['/app/agenda', I.cal, t('nav.schedule'), pathname.startsWith('/app/rotas')],
     ['/app/clientes', I.users, t('nav.clients')],
-    ['/app/financas', I.chart, t('nav.finance'), pathname.startsWith('/app/cobrancas')],
+    ['/app/financas', I.chart, t('nav.finance'), pathname.startsWith('/app/cobrancas'), unbilled],
     ['/app/mais', I.more, t('nav.more'), pathname.startsWith('/app/contratos') || pathname.startsWith('/app/conta')],
   ];
   return <Bar items={items} cols={5} />;
@@ -77,13 +88,13 @@ export function HelperBar() {
   ];
   return <Bar items={items} cols={4} />;
 }
-function Bar({ items, cols }: { items: [string, string, string, boolean?][]; cols: number }) {
+function Bar({ items, cols }: { items: [string, string, string, boolean?, number?][]; cols: number }) {
   return (
     <nav className="k-bar" aria-label="Menu">
       <div className="k-bar-in" style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}>
-        {items.map(([to, icon, label, extra]) => (
+        {items.map(([to, icon, label, extra, badge]) => (
           <NavLink key={to} to={to} end className={({ isActive }) => (isActive || extra ? 'on' : '')}>
-            {({ isActive }) => <><Svg d={icon} size={22} w={isActive || extra ? 2 : 1.8} />{label}</>}
+            {({ isActive }) => <><span className="k-bar-ic"><Svg d={icon} size={22} w={isActive || extra ? 2 : 1.8} />{!!badge && <span className="k-badge sm" aria-label={String(badge)}>{badge > 99 ? '99+' : badge}</span>}</span>{label}</>}
           </NavLink>
         ))}
       </div>
@@ -140,9 +151,9 @@ export function SheetActions({ cancel, onCancel, confirm, onConfirm, danger, dis
   );
 }
 
-export function Segment<T extends string>({ value, options, onChange, label, small }: { value: T; options: { value: T; label: string }[]; onChange: (v: T) => void; label: string; small?: boolean }) {
+export function Segment<T extends string>({ value, options, onChange, label, small }: { value: T; options: { value: T; label: ReactNode }[]; onChange: (v: T) => void; label: string; small?: boolean }) {
   return (
-    <div className={`k-seg${small ? ' sm' : ''}`} role="group" aria-label={label} style={{ gridTemplateColumns: `repeat(${options.length}, minmax(0, 1fr))` }}>
+    <div className={`k-seg${small ? ' sm' : ''}${options.length >= 4 && !small ? ' many' : ''}`} role="group" aria-label={label} style={{ gridTemplateColumns: `repeat(${options.length}, minmax(0, 1fr))` }}>
       {options.map((o) => <button type="button" key={o.value} aria-pressed={o.value === value} onClick={() => onChange(o.value)}>{o.label}</button>)}
     </div>
   );

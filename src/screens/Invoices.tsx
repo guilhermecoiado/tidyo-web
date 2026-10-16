@@ -6,7 +6,7 @@ import { useApp } from '../lib/session';
 import { Confirm, Sheet } from '../components/ui';
 import { DateField, Select } from '../components/pickers';
 import { C, Head, OwnerBar, PILL, Segment, SheetActions, Svg, I, usd } from '../components/kit';
-import { getClients, isOverdue, type Client } from '../lib/data';
+import { getClients, getUnbilled, invalidateUnbilled, isOverdue, type Client, type Unbilled } from '../lib/data';
 import { addDays, isoDate } from '../lib/format';
 import { invoicePdf, shareFile, type PaymentInfo } from '../lib/invoicePdf';
 import { translate, type Lang } from '../lib/i18n';
@@ -14,7 +14,7 @@ import { translate, type Lang } from '../lib/i18n';
 type Inv = { id: string; number: string; status: string; issued_on: string | null; due_on: string | null; total_cents: number; paid_cents: number; client_id: string; last_reminder_at: string | null;
   clients: { name: string; email: string | null; phone: string | null; language: Lang } | null; payments: { method: string; received_at: string }[] };
 type Line = { description: string; quantity: number; unit_cents: number; amount_cents: number };
-type Tab = 'late' | 'open' | 'paid';
+type Tab = 'tobill' | 'late' | 'open' | 'paid';
 const toCents = (s: string) => Math.round(parseFloat(s.replace(/[^0-9.,]/g, '').replace(',', '.')) * 100) || 0;
 
 export async function sendInvoicePdf(inv: Inv, company: { name: string; address?: string | null; payment_info?: PaymentInfo }, _t?: unknown) {
@@ -35,8 +35,10 @@ export default function Invoices() {
   const { t, lang, company, toast } = useApp();
   const [params, setParams] = useSearchParams();
   const [list, setList] = useState<Inv[] | null>(null);
-  const [tab, setTab] = useState<Tab>('late');
+  const [tab, setTab] = useState<Tab>(params.get('tab') === 'cobrar' ? 'tobill' : 'late');
   const [create, setCreate] = useState(!!params.get('nova'));
+  const [unbilled, setUnbilled] = useState<Unbilled[] | null>(null);
+  const [chargeFor, setChargeFor] = useState<string | null>(null);
   const [mark, setMark] = useState<Inv | null>(null);
   const [open, setOpen] = useState<Inv | null>(null);
   const [remind, setRemind] = useState(false);
@@ -45,8 +47,9 @@ export default function Invoices() {
     const { data } = await supabase.from('invoices').select('id, number, status, issued_on, due_on, total_cents, paid_cents, client_id, last_reminder_at, clients(name, email, phone, language), payments(method, received_at)')
       .eq('company_id', company.id).in('status', ['open', 'paid']).order('due_on', { ascending: true }).limit(300);
     const l = (data || []) as unknown as Inv[];
-    setList(l);
-    setTab((cur) => (cur === 'late' && !l.some((i) => isOverdue(i as never)) ? 'open' : cur));
+    const u = await getUnbilled(company.id);
+    setList(l); setUnbilled(u);
+    setTab((cur) => (cur === 'late' && !l.some((i) => isOverdue(i as never)) ? (u.length ? 'tobill' : 'open') : cur));
   }, [company]);
   useEffect(() => { load(); }, [load]);
 
@@ -75,12 +78,15 @@ export default function Invoices() {
             <div key={l as string} className="k-kpi" style={{ borderRadius: 14, padding: '10px 12px', gap: 2 }}><span className="k-kpi-l" style={{ fontWeight: 800, letterSpacing: '0.04em' }}>{l}</span><span className="num nw" style={{ fontFamily: "'Bricolage Grotesque', sans-serif", fontSize: 19, fontWeight: 700, color: c as string }}>{usd(v as number)}</span></div>
           ))}
         </div>
-        <Segment value={tab} onChange={setTab} label={t('inv.title')} options={[{ value: 'late', label: t('inv.lateTab') }, { value: 'open', label: t('inv.openTab') }, { value: 'paid', label: t('inv.paidTab') }]} />
+        <Segment value={tab} onChange={setTab} label={t('inv.title')} options={[
+          { value: 'tobill', label: <>{t('inv.toBillTab')}{!!unbilled?.length && <span className="k-segbadge">{unbilled.length}</span>}</> },
+          { value: 'late', label: <>{t('inv.lateTab')}{late.length > 0 && <span className="k-segbadge">{late.length}</span>}</> },
+          { value: 'open', label: t('inv.openTab') }, { value: 'paid', label: t('inv.paidTab') }]} />
         {missingPay && <Link to="/app/mais/recebimento" className="k-note" style={{ textDecoration: 'none' }}><span>{t('inv.addPayInfo')}</span><span className="k-btn k-btn-sm" style={{ background: '#FFFFFF', border: '1px solid #E5C875', color: '#6B4A04', minHeight: 40 }}>{t('inv.add')}</span></Link>}
         {tab === 'late' && late.length > 0 && (
           <button className="k-btn" onClick={() => setRemind(true)} style={{ minHeight: 46, border: '1px solid #F5D3C2', background: '#FFF3EC', color: '#8F2F08', fontSize: 13.5 }}>{t('inv.remindN', { n: late.length })}</button>
         )}
-        <div className="k-card" style={{ padding: '2px 12px', gap: 0 }}>
+        {tab === 'tobill' ? <ToBill list={unbilled} onCharge={setChargeFor} /> : <div className="k-card" style={{ padding: '2px 12px', gap: 0 }}>
           {!list ? [0, 1, 2].map((i) => <div key={i} className="skeleton" style={{ height: 48, margin: '12px 0' }} />) : rows.length === 0 ? <span style={{ display: 'block', padding: '20px 0', textAlign: 'center', fontSize: 13.5, color: C.muted }}>{tab === 'late' ? t('inv.noneLate') : tab === 'open' ? t('inv.noneOpen') : t('inv.nonePaid')}</span> : rows.map((i, k) => {
             const st: [string, string, string] = i.status === 'paid' ? [t('inv.status.paid'), ...PILL.ok] : isOverdue(i as never) ? [t('inv.status.overdue'), ...PILL.danger] : [t('inv.openTab'), ...PILL.neutral];
             return (
@@ -99,10 +105,11 @@ export default function Invoices() {
               </div>
             );
           })}
-        </div>
+        </div>}
       </main>
       <OwnerBar />
-      {create && <NewCharge preset={params.get('nova') || ''} onClose={() => { setCreate(false); if (params.get('nova')) setParams({}); }} onSaved={() => { setCreate(false); setParams({}); load(); }} />}
+      {create && <NewCharge preset={params.get('nova') || ''} jobId={params.get('job') || undefined} onClose={() => { setCreate(false); if (params.get('nova')) setParams({}); }} onSaved={() => { setCreate(false); setParams({}); load(); }} />}
+      {chargeFor && <NewCharge preset={chargeFor} onClose={() => setChargeFor(null)} onSaved={() => { setChargeFor(null); load(); }} />}
       {mark && <MarkPaid inv={mark} onClose={() => setMark(null)} onSaved={(m) => { setMark(null); toast(t('inv.markedAs', { m })); load(); }} />}
       {open && <InvoiceSheet inv={open} onClose={() => setOpen(null)} onChanged={() => { setOpen(null); load(); }} onMark={() => { setMark(open); setOpen(null); }} />}
       {remind && <RemindSheet list={late} onClose={() => { setRemind(false); load(); }} />}
@@ -110,11 +117,50 @@ export default function Invoices() {
   );
 }
 
-function NewCharge({ preset, onClose, onSaved }: { preset: string; onClose: () => void; onSaved: () => void }) {
+const shortDay = (iso: string, l: string) => new Date(iso).toLocaleDateString(l, { day: 'numeric', month: 'short' }).replace('.', '');
+
+/** "A cobrar": completed jobs not on any invoice yet, grouped by client, one tap to charge */
+function ToBill({ list, onCharge }: { list: Unbilled[] | null; onCharge: (clientId: string) => void }) {
+  const { t, lang } = useApp();
+  if (!list) return <div className="k-card" style={{ padding: 12 }}>{[0, 1].map((i) => <div key={i} className="skeleton" style={{ height: 64, margin: '6px 0' }} />)}</div>;
+  if (!list.length) return <div className="k-card" style={{ padding: '20px 16px', alignItems: 'center', textAlign: 'center', gap: 4 }}><b style={{ fontSize: 14 }}>{t('inv.toBillNoneT')}</b><span className="k-s125 k-muted">{t('inv.toBillNoneS')}</span></div>;
+  const groups = new Map<string, Unbilled[]>();
+  for (const j of list) groups.set(j.client_id, [...(groups.get(j.client_id) || []), j]);
+  const total = list.reduce((s, j) => s + j.price_cents, 0);
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+      <span className="k-s125 k-muted">{t('inv.toBillSum', { n: list.length, v: usd(total, true) })}</span>
+      {[...groups.entries()].map(([cid, jobs]) => {
+        const sum = jobs.reduce((s, j) => s + j.price_cents, 0);
+        return (
+          <div key={cid} className="k-card" style={{ padding: 12, gap: 10 }}>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+              <b className="k-ell" style={{ flex: 1, minWidth: 0, fontSize: 15 }}>{jobs[0].clients?.name}</b>
+              <span className="num nw" style={{ fontFamily: "'Bricolage Grotesque', sans-serif", fontWeight: 700, fontSize: 17 }}>{usd(sum, true)}</span>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+              {jobs.slice(0, 4).map((j, i) => (
+                <div key={j.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '7px 0', borderTop: i ? `1px solid ${C.soft}` : 0, fontSize: 13 }}>
+                  <span className="nw" style={{ color: C.muted, width: 56, flex: 'none' }}>{shortDay(j.scheduled_start, lang)}</span>
+                  <span className="k-ell" style={{ flex: 1, minWidth: 0 }}>{j.services?.name || t('inv.cleaning')}{(j.extras || []).length ? ` + ${(j.extras || []).length} extra` : ''}</span>
+                  <span className="num nw" style={{ fontWeight: 700 }}>{usd(j.price_cents, true)}</span>
+                </div>
+              ))}
+              {jobs.length > 4 && <span className="k-s125 k-muted" style={{ paddingTop: 4 }}>{t('inv.andMore', { n: jobs.length - 4 })}</span>}
+            </div>
+            <button className="k-btn k-btn-fill" style={{ minHeight: 44 }} onClick={() => onCharge(cid)}>{t('inv.chargeV', { v: usd(sum, true) })}</button>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+export function NewCharge({ preset, jobId, onClose, onSaved }: { preset: string; jobId?: string; onClose: () => void; onSaved: () => void }) {
   const { t, tErr, lang, company, toast } = useApp();
   const [clients, setClients] = useState<Client[]>([]);
   const [clientId, setClientId] = useState(preset);
-  const [jobs, setJobs] = useState<{ id: string; scheduled_start: string; price_cents: number; services: { name: string } | null; extras: { name: string; price_cents: number }[] }[] | null>(null);
+  const [jobs, setJobs] = useState<Unbilled[] | null>(null);
   const [pick, setPick] = useState<Record<string, boolean>>({});
   const [extra, setExtra] = useState<{ d: string; v: string }[]>([]);
   const [due, setDue] = useState(isoDate(addDays(new Date(), 7)));
@@ -123,26 +169,26 @@ function NewCharge({ preset, onClose, onSaved }: { preset: string; onClose: () =
   useEffect(() => {
     if (!company || !clientId) return;
     setJobs(null);
-    Promise.all([
-      supabase.from('jobs').select('id, scheduled_start, price_cents, services(name), extras').eq('client_id', clientId).eq('status', 'completed').gt('price_cents', 0).order('scheduled_start', { ascending: false }).limit(30),
-      supabase.from('invoice_lines').select('job_id').eq('company_id', company.id).not('job_id', 'is', null),
-    ]).then(([j, l]) => {
-      const done = new Set(((l.data || []) as { job_id: string }[]).map((x) => x.job_id));
-      const list = ((j.data || []) as unknown as NonNullable<typeof jobs>).filter((x) => !done.has(x.id));
-      setJobs(list); setPick(Object.fromEntries(list.map((x) => [x.id, true])));
+    getUnbilled(company.id, clientId).then((list) => {
+      setJobs(list.slice(0, 30));
+      const only = jobId && list.some((x) => x.id === jobId);
+      setPick(Object.fromEntries(list.map((x) => [x.id, only ? x.id === jobId : true])));
     });
-  }, [company, clientId]);
+  }, [company, clientId, jobId]);
+  const client = clients.find((c) => c.id === clientId);
+  // lines go on the PDF, so they are written in the client's language
+  const cl = (client?.language || 'en') as Lang;
+  const ct = (k: string) => translate(cl, k);
   const lines = useMemo(() => [
     ...(jobs || []).filter((j) => pick[j.id]).flatMap((j) => {
       const exTotal = (j.extras || []).reduce((s, e) => s + e.price_cents, 0);
-      const d = new Date(j.scheduled_start).toLocaleDateString(lang, { day: 'numeric', month: 'short' }).replace('.', '');
-      return [{ job_id: j.id, description: `${j.services?.name || t('job.details')} · ${d}`, unit_cents: j.price_cents - exTotal },
-        ...(j.extras || []).map((e) => ({ job_id: null as string | null, description: `${t('inv.extra')}: ${e.name}`, unit_cents: e.price_cents }))];
+      const d = shortDay(j.scheduled_start, cl);
+      return [{ job_id: j.id, description: `${j.services?.name || ct('inv.cleaning')} · ${d}`, unit_cents: j.price_cents - exTotal },
+        ...(j.extras || []).map((e) => ({ job_id: null as string | null, description: `${ct('inv.extra')}: ${e.name}`, unit_cents: e.price_cents }))];
     }),
     ...extra.filter((e) => e.d && toCents(e.v) > 0).map((e) => ({ job_id: null as string | null, description: e.d, unit_cents: toCents(e.v) })),
-  ], [jobs, pick, extra, lang, t]);
+  ], [jobs, pick, extra, cl]); // eslint-disable-line react-hooks/exhaustive-deps
   const total = lines.reduce((s, l) => s + l.unit_cents, 0);
-  const client = clients.find((c) => c.id === clientId);
   const save = async () => {
     if (!company || !client || !lines.length) return;
     setBusy(true);
@@ -151,6 +197,7 @@ function NewCharge({ preset, onClose, onSaved }: { preset: string; onClose: () =
     const { error: e2 } = await supabase.from('invoice_lines').insert(lines.map((l) => ({ ...l, invoice_id: inv.id, company_id: company.id })));
     if (e2) { setBusy(false); toast(tErr(e2.message)); return; }
     const { data: full } = await supabase.from('invoices').select('id, number, status, issued_on, due_on, total_cents, paid_cents, client_id, last_reminder_at, clients(name, email, phone, language), payments(method, received_at)').eq('id', inv.id).single();
+    invalidateUnbilled();
     if (full) await sendInvoicePdf(full as unknown as Inv, company as never, t);
     setBusy(false);
     toast(t('inv.sent', { v: usd(total, true), name: client.name }));
@@ -164,7 +211,7 @@ function NewCharge({ preset, onClose, onSaved }: { preset: string; onClose: () =
         {!jobs ? <div className="skeleton" style={{ height: 30 }} /> : jobs.length === 0 && !extra.length ? <span className="k-s125 k-muted">{t('inv.nothing')}</span> : jobs.map((j) => (
           <label key={j.id} className="check" style={{ alignItems: 'center', gap: 10, fontSize: 13.5 }}>
             <input type="checkbox" checked={!!pick[j.id]} onChange={() => setPick({ ...pick, [j.id]: !pick[j.id] })} />
-            <span style={{ flex: 1 }}>{j.services?.name || t('job.details')} · {new Date(j.scheduled_start).toLocaleDateString(lang, { day: 'numeric', month: 'short' }).replace('.', '')}{(j.extras || []).length ? ` + ${j.extras.length} extra` : ''}</span>
+            <span style={{ flex: 1, minWidth: 0 }}>{j.services?.name || t('inv.cleaning')} · {shortDay(j.scheduled_start, lang)}{(j.extras || []).length ? ` + ${(j.extras || []).length} extra` : ''}</span>
             <b className="num">{usd(j.price_cents, true)}</b>
           </label>
         ))}
@@ -257,7 +304,7 @@ function RemindSheet({ list, onClose }: { list: Inv[]; onClose: () => void }) {
       {list.map((i) => (
         <div key={i.id} style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: '10px 0', borderTop: `1px solid ${C.soft}` }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}><b className="k-ell">{i.clients?.name}</b><span className="num" style={{ fontWeight: 800 }}>{usd(i.total_cents - i.paid_cents, true)}</span></div>
-          <div className="k-chips wrap">
+          <div className="k-chips">
             {i.clients?.phone && <a className="k-chip" href={`https://wa.me/${i.clients.phone.replace(/\D/g, '')}?text=${encodeURIComponent(msg(i))}`} target="_blank" rel="noreferrer" onClick={() => mark(i)}>WhatsApp</a>}
             {i.clients?.phone && <a className="k-chip" href={`sms:${i.clients.phone}?&body=${encodeURIComponent(msg(i))}`} onClick={() => mark(i)}>SMS</a>}
             {i.clients?.email && <a className="k-chip" href={`mailto:${i.clients.email}?subject=${encodeURIComponent(i.number)}&body=${encodeURIComponent(msg(i))}`} onClick={() => mark(i)}>Email</a>}
