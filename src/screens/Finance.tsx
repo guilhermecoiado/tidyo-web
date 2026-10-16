@@ -125,7 +125,7 @@ export default function Finance() {
   useEffect(() => { if (!undo) return; const i = window.setTimeout(() => setUndo(null), 4000); return () => window.clearTimeout(i); }, [undo]);
 
   const isCurrent = mo.y === now.getFullYear() && mo.m === now.getMonth();
-  const monthName = new Date(mo.y, mo.m, 1).toLocaleDateString(lang, { month: 'long', year: 'numeric' });
+  const monthName = new Date(mo.y, mo.m, 1).toLocaleDateString(lang, mo.y === now.getFullYear() ? { month: 'long' } : { month: 'long', year: 'numeric' });
   const health = d ? healthScore(d) : null;
   const profit = d ? d.billed - d.costs : 0;
   const margin = d && d.billed > 0 ? profit / d.billed : null;

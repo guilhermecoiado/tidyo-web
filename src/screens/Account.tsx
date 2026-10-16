@@ -67,7 +67,7 @@ export default function Account() {
         <Head title={t('acc.title')} back="/app/mais" />
         <div className="k-brand" style={{ gap: 12 }}>
           <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
-            <span style={{ display: 'flex', flexDirection: 'column', flex: 1 }}><span style={{ fontSize: 12, fontWeight: 800, color: C.faint, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{t('acc.yourPlan')}</span><span style={{ fontFamily: "'Bricolage Grotesque', sans-serif", fontSize: 24, fontWeight: 700, color: '#FFFFFF' }}>{names[current][0]}</span></span>
+            <span style={{ display: 'flex', flexDirection: 'column', flex: 1 }}><span style={{ fontSize: 12, fontWeight: 800, color: C.faint, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{t('acc.yourPlan')}</span><span className="nw" style={{ fontFamily: "'Bricolage Grotesque', sans-serif", fontSize: 22, fontWeight: 700, color: '#FFFFFF' }}>{names[current][0]}</span></span>
             <span className="num nw" style={{ fontFamily: "'Bricolage Grotesque', sans-serif", fontSize: 24, fontWeight: 700, color: C.mint }}>{price(PLAN_PRICE[current], false)}{t('acc.perMonth')}</span>
           </div>
           <span style={{ fontSize: 13, color: '#B9D6D0' }}>{sub?.cancel_at_period_end ? t('acc.endsOn', { d: endTxt }) : sub?.status === 'trialing' ? t('acc.trialUntil', { d: endTxt }) : t('acc.nextCharge', { d: endTxt })}</span>

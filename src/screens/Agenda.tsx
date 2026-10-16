@@ -5,7 +5,7 @@ import { useApp } from '../lib/session';
 import { C, Empty, Fab, I, OwnerBar, Segment, Svg, colorOf, hm, shortName } from '../components/kit';
 import { Sheet } from '../components/ui';
 import { getJobs, getMembers, jobMinutes, memberIndex, type Job, type Member } from '../lib/data';
-import { addDays, startOfDay } from '../lib/format';
+import { addDays, isoDate, startOfDay } from '../lib/format';
 import { JobSheet } from './JobSheet';
 import { JobCard } from './Home';
 
@@ -79,6 +79,7 @@ export default function Agenda() {
             </button>
           </div>
           <Segment small value={view} onChange={setView} label={t('ag.view')} options={[{ value: 'day', label: t('ag.day') }, { value: 'week', label: t('ag.weekV') }, { value: 'month', label: t('ag.month') }]} />
+          <Link className="k-iconbtn" to={`/app/rotas?d=${isoDate(day)}`} aria-label={t('rt.title')} title={t('rt.title')} style={{ flex: 'none' }}><Svg d={I.route} size={20} color={C.ink} /></Link>
         </div>
 
         {view !== 'month' && (
@@ -191,7 +192,7 @@ function Timeline({ day, jobs, members, who, onPick }: { day: Date; jobs: Job[];
   );
 }
 
-function MonthGrid({ day, jobs, sunday, onPick, onMonth }: { day: Date; jobs: Job[] | null; sunday: boolean; onPick: (d: Date) => void; onMonth: (n: number) => void }) {
+export function MonthGrid({ day, jobs, sunday, onPick, onMonth }: { day: Date; jobs: Job[] | null; sunday: boolean; onPick: (d: Date) => void; onMonth: (n: number) => void }) {
   const { t, lang } = useApp();
   const first = new Date(day.getFullYear(), day.getMonth(), 1);
   const lead = sunday ? first.getDay() : (first.getDay() + 6) % 7;

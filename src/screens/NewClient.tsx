@@ -4,6 +4,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useApp } from '../lib/session';
 import { Confirm, Sheet } from '../components/ui';
+import { TimeField } from '../components/pickers';
 import { archiveClient } from '../lib/data';
 import { C, Head, Segment, Svg, SPARK, usd } from '../components/kit';
 import { addDays, randomToken, sha256Hex } from '../lib/format';
@@ -29,7 +30,7 @@ export default function NewClient() {
   const pr = pricingOf(company?.pricing);
   const [kind, setKind] = useState<'residential' | 'commercial'>(company?.mode === 'commercial' ? 'commercial' : 'residential');
   const isCom = kind === 'commercial';
-  const [f, setF] = useState({ name: '', contact: '', phone: '', email: '', address: '', access: '', notes: '' });
+  const [f, setF] = useState({ name: '', contact: '', phone: '', email: '', address: '', access: '', notes: '', after: '' });
   const [lang, setLang] = useState<Lang | 'raw'>((company?.default_language as Lang) || 'en');
   const [res, setRes] = useState({ beds: 3, baths: 2, sqft: 1800 });
   const [com, setCom] = useState({ sqft: 4000, rooms: 8, baths: 2 });
@@ -46,13 +47,13 @@ export default function NewClient() {
 
   useEffect(() => {
     if (!editId) return;
-    supabase.from('clients').select('id, kind, name, contact_name, email, phone, language, no_translate, notes, portal_user_id, properties(id, address_line1, city, state, zip, access_instructions, pets, special_instructions, bedrooms, bathrooms, square_feet)').eq('id', editId).maybeSingle()
+    supabase.from('clients').select('id, kind, name, contact_name, email, phone, language, no_translate, notes, portal_user_id, properties(id, address_line1, city, state, zip, access_instructions, pets, special_instructions, bedrooms, bathrooms, square_feet, arrive_after)').eq('id', editId).maybeSingle()
       .then(({ data }) => {
         if (!data) return;
-        const c = data as unknown as { kind: 'residential' | 'commercial'; name: string; contact_name: string | null; email: string | null; phone: string | null; language: Lang; no_translate: boolean; notes: string | null; portal_user_id: string | null; properties: { id: string; address_line1: string; city: string; state: string; zip: string; access_instructions: string | null; pets: string | null; special_instructions: string | null; bedrooms: number | null; bathrooms: number | null; square_feet: number | null }[] };
+        const c = data as unknown as { kind: 'residential' | 'commercial'; name: string; contact_name: string | null; email: string | null; phone: string | null; language: Lang; no_translate: boolean; notes: string | null; portal_user_id: string | null; properties: { id: string; address_line1: string; city: string; state: string; zip: string; access_instructions: string | null; pets: string | null; special_instructions: string | null; bedrooms: number | null; bathrooms: number | null; square_feet: number | null; arrive_after: string | null }[] };
         const p = c.properties[0];
         setKind(c.kind); setLang(c.no_translate ? 'raw' : c.language);
-        setF({ name: c.name, contact: c.contact_name || '', phone: c.phone || '', email: c.email || '', address: p ? `${p.address_line1}, ${p.city}, ${p.state} ${p.zip}` : '', access: p?.access_instructions || '', notes: c.notes || '' });
+        setF({ name: c.name, contact: c.contact_name || '', phone: c.phone || '', email: c.email || '', address: p ? `${p.address_line1}, ${p.city}, ${p.state} ${p.zip}` : '', access: p?.access_instructions || '', notes: c.notes || '', after: p?.arrive_after ? p.arrive_after.slice(0, 5) : '' });
         if (p) {
           if (c.kind === 'commercial') setCom({ sqft: p.square_feet || 0, rooms: p.bedrooms || 0, baths: Number(p.bathrooms || 0) });
           else setRes({ beds: p.bedrooms || 0, baths: Number(p.bathrooms || 0), sqft: p.square_feet || 0 });
@@ -102,7 +103,7 @@ export default function NewClient() {
       language: lang === 'raw' ? company.default_language : lang, no_translate: lang === 'raw', notes: f.notes || null };
     const pets = [resChips.dog ? t('nc.dog') : '', resChips.cat ? t('nc.cat') : ''].filter(Boolean).join(', ') || null;
     const special = isCom ? null : [resChips.unscented ? t('nc.unscented') : '', resChips.stairs ? t('nc.stairs') : ''].filter(Boolean).join(' · ') || null;
-    const propRow = { address_line1: addr.line1, city: addr.city, state: addr.state, zip: addr.zip, access_instructions: f.access || null,
+    const propRow = { address_line1: addr.line1, city: addr.city, state: addr.state, zip: addr.zip, access_instructions: f.access || null, arrive_after: f.after || null,
       bedrooms: isCom ? com.rooms : res.beds, bathrooms: isCom ? com.baths : res.baths, square_feet: isCom ? com.sqft : res.sqft,
       ...(isCom ? {} : { pets, special_instructions: special }) };
     try {
@@ -215,6 +216,14 @@ export default function NewClient() {
             <label className="k-field"><span>{t('nc.access')}</span><input className="k-input" value={f.access} onChange={up('access')} placeholder={t('nc.accessPh')} /></label>
           )}
           {isCom && <label className="k-field"><span>{t('nc.access')}</span><input className="k-input" value={f.access} onChange={up('access')} /></label>}
+          <div className="k-field">
+            <span>{t('nc.after')}</span>
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+              <div style={{ flex: 1, minWidth: 0 }}><TimeField value={f.after} onChange={(v) => setF({ ...f, after: v })} label={t('nc.after')} from={6} to={20} /></div>
+              {f.after && <button type="button" className="k-btn k-btn-line" style={{ flex: 'none' }} onClick={() => setF({ ...f, after: '' })}>{t('nc.afterNone')}</button>}
+            </div>
+            <span className="k-help" style={{ fontSize: 12 }}>{t('nc.afterHint')}</span>
+          </div>
         </section>
 
         <div className="k-dark" style={{ borderRadius: 18, padding: '14px 16px', gap: 8 }}>

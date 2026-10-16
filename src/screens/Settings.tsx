@@ -187,7 +187,7 @@ function CompanyPage() {
       </div>
       <span className="k-lbl">{t('set.mode')}</span>
       <Segment value={f.mode} onChange={(v) => setF({ ...f, mode: v })} label={t('set.mode')} options={[{ value: 'residential', label: t('cl.res') }, { value: 'commercial', label: t('cl.com') }, { value: 'both', label: t('set.both') }]} />
-      <button className="k-btn k-btn-fill k-btn-big" disabled={!f.name.trim()} onClick={() => { save({ name: f.name.trim(), address: f.address || null, state: f.state || null, timezone: f.timezone, mode: f.mode }); try { const s = JSON.parse(localStorage.getItem('tidyo.steps') || '{}'); localStorage.setItem('tidyo.steps', JSON.stringify({ ...s, emp: true })); } catch { /* ignore */ } }}>{t('c.save')}</button>
+      <button className="k-btn k-btn-fill k-btn-big" disabled={!f.name.trim()} onClick={() => { save({ name: f.name.trim(), address: f.address || null, state: f.state || null, timezone: f.timezone, mode: f.mode }).then((ok) => { if (ok && company && f.address.trim() && f.address !== company.address) supabase.functions.invoke('geocode', { body: { table: 'companies', ids: [company.id], address: f.address.trim() } }).then(() => undefined).catch(() => undefined); }); try { const s = JSON.parse(localStorage.getItem('tidyo.steps') || '{}'); localStorage.setItem('tidyo.steps', JSON.stringify({ ...s, emp: true })); } catch { /* ignore */ } }}>{t('c.save')}</button>
     </div>
   );
 }
@@ -272,7 +272,7 @@ function PricesPage() {
       <div className="k-card" style={{ gap: 12 }}>
         <span style={{ fontWeight: 800 }}>{t('set.estParams')}</span>
         <span className="k-help">{t('set.estParamsHint')}</span>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 8 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 8, alignItems: 'end' }}>
           <label className="k-field"><span className="k-s12">{t('set.pBase')}</span>{num('res_base', true)}</label>
           <label className="k-field"><span className="k-s12">{t('set.pBed')}</span>{num('res_bed', true)}</label>
           <label className="k-field"><span className="k-s12">{t('set.pBath')}</span>{num('res_bath', true)}</label>

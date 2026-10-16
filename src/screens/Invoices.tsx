@@ -53,13 +53,13 @@ export default function Invoices() {
   const late = (list || []).filter((i) => isOverdue(i as never));
   const openL = (list || []).filter((i) => i.status === 'open' && !isOverdue(i as never));
   const monthStart = isoDate(new Date(new Date().getFullYear(), new Date().getMonth(), 1));
-  const paid = (list || []).filter((i) => i.status === 'paid').sort((a, b) => (b.payments[0]?.received_at || '').localeCompare(a.payments[0]?.received_at || ''));
-  const paidMonth = paid.filter((i) => (i.payments.map((p) => p.received_at).sort().pop() || '').slice(0, 10) >= monthStart);
+  const paid = (list || []).filter((i) => i.status === 'paid').sort((a, b) => ((b.payments || [])[0]?.received_at || '').localeCompare((a.payments || [])[0]?.received_at || ''));
+  const paidMonth = paid.filter((i) => ((i.payments || []).map((p) => p.received_at).sort().pop() || '').slice(0, 10) >= monthStart);
   const rest = (i: Inv) => i.total_cents - i.paid_cents;
   const rows = tab === 'late' ? late : tab === 'open' ? openL : paid.slice(0, 40);
   const days = (d: string) => Math.round((new Date(d + 'T12:00').getTime() - Date.now()) / 864e5);
   const when = (i: Inv) => {
-    if (i.status === 'paid') { const p = i.payments.map((x) => x).sort((a, b) => b.received_at.localeCompare(a.received_at))[0]; return p ? t('inv.paidOn', { d: new Date(p.received_at).toLocaleDateString(lang, { day: 'numeric', month: 'short' }).replace('.', ''), m: t(`pay.${p.method}`) }) : t('inv.status.paid'); }
+    if (i.status === 'paid') { const p = (i.payments || []).map((x) => x).sort((a, b) => b.received_at.localeCompare(a.received_at))[0]; return p ? t('inv.paidOn', { d: new Date(p.received_at).toLocaleDateString(lang, { day: 'numeric', month: 'short' }).replace('.', ''), m: t(`pay.${p.method}`) }) : t('inv.status.paid'); }
     if (!i.due_on) return '';
     const n = days(i.due_on);
     return n < 0 ? t('inv.lateBy', { n: -n }) : n === 0 ? t('inv.dueToday') : t('inv.dueIn', { n });
