@@ -145,8 +145,8 @@ export async function invoicePdf(o: { company: { name: string; address?: string 
     doc.setDrawColor(223, 231, 229); doc.setLineWidth(0.6); doc.line(M, H - 50, W - M, H - 50);
     font('normal', 9); doc.setTextColor(120, 138, 134);
     doc.text(t('pdf.thanks'), M, H - 32);
-    font('bold', 9); doc.setTextColor(10, 61, 53); doc.text('Tidyo', W - M, H - 32, { align: 'right' });
-    if (logo) doc.addImage(logo, 'PNG', W - M - doc.getTextWidth('Tidyo') - 18, H - 43, 14, 14);
+    font('bold', 9); doc.setTextColor(10, 61, 53); doc.text('Tidyo by YEHI', W - M, H - 32, { align: 'right' });
+    if (logo) doc.addImage(logo, 'PNG', W - M - doc.getTextWidth('Tidyo by YEHI') - 18, H - 43, 14, 14);
     if (pages > 1) { font('normal', 8); doc.setTextColor(150, 165, 160); doc.text(`${i}/${pages}`, W / 2, H - 32, { align: 'center' }); }
   }
   return doc.output('blob') as Blob;

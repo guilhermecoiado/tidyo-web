@@ -3,7 +3,8 @@ import { useCallback, useEffect, useMemo, useState, type CSSProperties, type Rea
 import { Link, useParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useApp } from '../lib/session';
-import { Sheet } from '../components/ui';
+import { Confirm, Sheet } from '../components/ui';
+import { US_STATES } from './Auth';
 import { Select, DateField } from '../components/pickers';
 import { C, initials } from '../components/kit';
 import { mediaUrl } from '../components/Ad';
@@ -128,6 +129,7 @@ function Subscribers() {
   const [q, setQ] = useState('');
   const [sel, setSel] = useState<string | null>(null);
   const [act, setAct] = useState<'extend_trial' | 'discount' | 'suspend' | 'reactivate' | null>(null);
+  const [editing, setEditing] = useState<string | null>(null);
   const [at] = useState(new Date());
   const st = useMemo(() => subStats(list || []), [list]);
   const rows = (list || []).filter((s) => (f === 'all' || s.status === f || (f === 'canceled' && s.status === 'paused')) && (!q.trim() || `${s.name} ${s.owner_email || ''} ${s.state || ''}`.toLowerCase().includes(q.trim().toLowerCase())));
@@ -206,6 +208,7 @@ function Subscribers() {
                 ))}
               </div>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, paddingTop: 4 }}>
+                <button onClick={() => setEditing(cur.id)} style={{ ...chip(false), borderRadius: 11, minHeight: 38, background: C.ink, color: '#FFFFFF', borderColor: C.ink }}>{t('sa.editData')}</button>
                 <button onClick={() => setAct('extend_trial')} style={{ ...chip(false), borderRadius: 11, minHeight: 38 }}>{t('sa.extend')}</button>
                 <button onClick={() => setAct('discount')} style={{ ...chip(false), borderRadius: 11, minHeight: 38 }}>{t('sa.discount')}</button>
                 {cur.status === 'paused'
@@ -227,7 +230,117 @@ function Subscribers() {
         </div>
       </div>
       {act && cur && <ActionDialog sub={cur} action={act} onClose={() => setAct(null)} onDone={() => { setAct(null); load(); }} />}
+      {editing && <EditCustomer companyId={editing} onClose={() => setEditing(null)} onSaved={load} />}
     </>
+  );
+}
+
+type Person = { id: string; user_id: string; display_name: string; role: string; status: string; email: string; full_name: string; phone: string; last_sign_in_at: string | null; must_change_password: boolean };
+async function adminUser(body: Record<string, unknown>) {
+  const { data, error } = await supabase.functions.invoke('admin-user', { body });
+  if (error) {
+    let msg = error.message;
+    try { const j = await (error as { context?: Response }).context?.json(); if (j?.error) msg = j.error; } catch { /* keep */ }
+    return { error: msg, data: null };
+  }
+  return { error: null, data };
+}
+
+/** Edit a customer's company and people; e-mail change and temporary password (the person picks a new one at next sign-in) */
+function EditCustomer({ companyId, onClose, onSaved }: { companyId: string; onClose: () => void; onSaved: () => void }) {
+  const { t, lang, toast } = useApp();
+  const [co, setCo] = useState<{ name: string; state: string; address: string } | null>(null);
+  const [people, setPeople] = useState<Person[]>([]);
+  const [sel, setSel] = useState<Person | null>(null);
+  const [form, setForm] = useState({ full_name: '', email: '', phone: '' });
+  const [busy, setBusy] = useState(false);
+  const [askPw, setAskPw] = useState(false);
+  const [temp, setTemp] = useState<string | null>(null);
+  const load = useCallback(async () => {
+    const { data, error } = await adminUser({ action: 'get', company_id: companyId });
+    if (error) { toast(error); return; }
+    const c = data.company || {};
+    setCo({ name: c.name || '', state: c.state || '', address: c.address || '' });
+    setPeople(data.people || []);
+  }, [companyId, toast]);
+  useEffect(() => { load(); }, [load]);
+  const pick = (p: Person) => { setSel(p); setForm({ full_name: p.full_name, email: p.email, phone: p.phone }); setTemp(null); };
+  const saveCompany = async () => {
+    if (!co) return;
+    setBusy(true);
+    const { error } = await adminUser({ action: 'update_company', company_id: companyId, ...co });
+    setBusy(false);
+    if (error) toast(error); else { toast(t('c.saved')); onSaved(); }
+  };
+  const savePerson = async () => {
+    if (!sel) return;
+    setBusy(true);
+    const patch: Record<string, unknown> = { action: 'update_user', company_id: companyId, user_id: sel.user_id, full_name: form.full_name, phone: form.phone };
+    if (form.email.trim().toLowerCase() !== sel.email.toLowerCase()) patch.email = form.email;
+    const { error } = await adminUser(patch);
+    setBusy(false);
+    if (error) toast(error === 'invalid_email' ? t('sa.badEmail') : error); else { toast(t('c.saved')); setSel(null); load(); onSaved(); }
+  };
+  const makeTemp = async () => {
+    if (!sel) return;
+    setAskPw(false); setBusy(true);
+    const { data, error } = await adminUser({ action: 'temp_password', company_id: companyId, user_id: sel.user_id });
+    setBusy(false);
+    if (error) toast(error); else { setTemp(data.password); load(); }
+  };
+  const roleText = (r: string) => t(`team.${r}`);
+  return (
+    <Sheet title={t('sa.editTitle')} onClose={onClose}>
+      {!co ? <div className="skeleton" style={{ height: 160, borderRadius: 14 }} /> : sel ? (
+        <>
+          <button className="k-link" style={{ alignSelf: 'flex-start' }} onClick={() => setSel(null)}>← {co.name}</button>
+          <span style={{ fontSize: 12.5, color: C.muted }}>{roleText(sel.role)} · {sel.last_sign_in_at ? t('sa.lastSeen', { d: new Date(sel.last_sign_in_at).toLocaleDateString(lang, { day: 'numeric', month: 'short' }) }) : t('sa.neverSeen')}</span>
+          <label className="k-field"><span>{t('sa.fullName')}</span><input className="k-input" value={form.full_name} onChange={(e) => setForm({ ...form, full_name: e.target.value })} /></label>
+          <label className="k-field"><span>Email</span><input className="k-input" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} /></label>
+          {form.email.trim().toLowerCase() !== sel.email.toLowerCase() && <span style={{ fontSize: 12, color: '#8A4B05', lineHeight: 1.45 }}>{t('sa.emailNote')}</span>}
+          <label className="k-field"><span>{t('sa.phone')}</span><input className="k-input" type="tel" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} /></label>
+          <div className="k-pair">
+            <button className="k-btn k-btn-line" onClick={() => setSel(null)}>{t('c.cancel')}</button>
+            <button className="k-btn" style={{ background: C.ink, color: '#FFFFFF', border: 0 }} disabled={busy || !form.full_name.trim() || !form.email.trim()} onClick={savePerson}>{t('c.save')}</button>
+          </div>
+          <div style={{ borderTop: `1px solid ${C.line}`, paddingTop: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <b style={{ fontSize: 14 }}>{t('sa.tempPw')}</b>
+            <span style={{ fontSize: 12.5, color: C.muted, lineHeight: 1.45 }}>{t('sa.tempPwHint')}</span>
+            {temp ? (
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center', background: '#F4F7F6', borderRadius: 12, padding: '10px 12px' }}>
+                <code style={{ flex: 1, fontSize: 16, fontWeight: 800, letterSpacing: '0.04em', overflowWrap: 'anywhere' }}>{temp}</code>
+                <button className="k-btn k-btn-sm k-btn-line" onClick={() => { navigator.clipboard?.writeText(temp).then(() => toast(t('sa.copied'))).catch(() => undefined); }}>{t('sa.copy')}</button>
+              </div>
+            ) : <button className="k-btn k-btn-line" disabled={busy} onClick={() => setAskPw(true)}>{t('sa.makeTemp')}</button>}
+            {sel.must_change_password && !temp && <span style={{ fontSize: 12, color: '#8A4B05' }}>{t('sa.tempPending')}</span>}
+          </div>
+          {askPw && <Confirm text={t('sa.tempAsk', { name: sel.full_name })} confirmLabel={t('sa.makeTemp')} onCancel={() => setAskPw(false)} onConfirm={makeTemp} />}
+        </>
+      ) : (
+        <>
+          <span style={{ fontSize: 12.5, color: C.muted, lineHeight: 1.45 }}>{t('sa.auditText')}</span>
+          <label className="k-field"><span>{t('sa.th.company')}</span><input className="k-input" value={co.name} onChange={(e) => setCo({ ...co, name: e.target.value })} /></label>
+          <div style={{ display: 'grid', gridTemplateColumns: '96px 1fr', gap: 8 }}>
+            <label className="k-field"><span>{t('sa.th.state')}</span><Select value={co.state} onChange={(v) => setCo({ ...co, state: v })} label={t('sa.th.state')}><option value="">—</option>{US_STATES.map((x) => <option key={x} value={x}>{x}</option>)}</Select></label>
+            <label className="k-field"><span>{t('sa.address')}</span><input className="k-input" value={co.address} onChange={(e) => setCo({ ...co, address: e.target.value })} /></label>
+          </div>
+          <button className="k-btn" style={{ background: C.ink, color: '#FFFFFF', border: 0 }} disabled={busy || !co.name.trim()} onClick={saveCompany}>{t('sa.saveCompany')}</button>
+          <b style={{ fontSize: 14, marginTop: 4 }}>{t('sa.people')}</b>
+          <div style={{ display: 'flex', flexDirection: 'column', border: `1px solid ${C.line}`, borderRadius: 14 }}>
+            {people.length === 0 ? <span style={{ padding: 14, fontSize: 13, color: C.muted }}>—</span> : people.map((p, i) => (
+              <button key={p.id} onClick={() => pick(p)} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', minHeight: 56, border: 0, borderTop: i ? `1px solid ${C.line}` : 0, background: 'transparent', cursor: 'pointer', textAlign: 'left', fontFamily: 'inherit', color: C.ink }}>
+                <span style={{ width: 34, height: 34, borderRadius: 34, background: '#E3F1EE', color: '#0B6B5F', fontWeight: 800, fontSize: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>{initials(p.full_name || p.email)}</span>
+                <span style={{ display: 'flex', flexDirection: 'column', flex: 1, minWidth: 0 }}>
+                  <b style={{ fontSize: 13.5, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.full_name}</b>
+                  <span style={{ fontSize: 12, color: C.muted, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{roleText(p.role)} · {p.email}</span>
+                </span>
+                <span style={{ color: '#9AA9A6', fontSize: 18 }}>›</span>
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+    </Sheet>
   );
 }
 

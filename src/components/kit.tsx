@@ -197,3 +197,8 @@ export const hm = (iso: string | Date, lang: string) => {
   const d = typeof iso === 'string' ? new Date(iso) : iso;
   return lang === 'en' ? d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }) : `${d.getHours()}:${String(d.getMinutes()).padStart(2, '0')}`;
 };
+
+/** Brand credit shown in footers */
+export function ByYehi({ color = '#7F9692', style }: { color?: string; style?: CSSProperties }) {
+  return <span className="nw" style={{ fontSize: 11.5, fontWeight: 700, color, letterSpacing: '0.01em', ...style }}>Tidyo by YEHI · Developed by YEHI</span>;
+}

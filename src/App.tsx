@@ -72,6 +72,8 @@ function Routed() {
   useEffect(() => { if (ready) releaseSplash(); }, [ready]);
   if (!ready) return <FullLoader />;
   if (session && needsMfa) return <MfaPrompt onDone={refresh} />;
+  // temporary password set by Tidyo support: choose a new one before anything else
+  if (session?.user?.user_metadata?.must_change_password) return <NewPassword forced />;
   return (
     <div className="route-view" key={routeKey(loc.pathname)}>
     <Routes location={loc}>

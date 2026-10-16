@@ -54,6 +54,7 @@ export function SecuritySection() {
 
   return (
     <>
+      <ChangePasswordCard />
       <section className="card stack">
         <div className="row"><Icon name="key" /><span className="bold grow">{t('sec.title')}</span>
           <span className={`badge ${factors.length ? 'b-ok' : 'b-neutral'}`}>{factors.length ? t('sec.enabled') : t('sec.disabled')}</span></div>
@@ -115,5 +116,55 @@ export function MfaPrompt({ onDone }: { onDone: () => void }) {
         <button type="button" className="link-btn" onClick={async () => { await supabase.auth.signOut(); window.location.replace('/'); }}>{t('auth.signout')}</button>
       </form>
     </main>
+  );
+}
+
+/** Change my password: confirms the current one first, then saves the new one */
+export function ChangePasswordSheet({ onClose }: { onClose: () => void }) {
+  const { t, tErr, toast } = useApp();
+  const [cur, setCur] = useState('');
+  const [pw, setPw] = useState('');
+  const [pw2, setPw2] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  const save = async (e: FormEvent) => {
+    e.preventDefault();
+    setError('');
+    if (pw.length < 8) { setError(t('auth.weak')); return; }
+    if (pw !== pw2) { setError(t('pw.mismatch')); return; }
+    setBusy(true);
+    const { data: u } = await supabase.auth.getUser();
+    const email = u.user?.email;
+    if (email) {
+      const { error: e1 } = await supabase.auth.signInWithPassword({ email, password: cur });
+      if (e1) { setBusy(false); setError(t('pw.wrongCurrent')); return; }
+    }
+    const { error: e2 } = await supabase.auth.updateUser({ password: pw, data: { must_change_password: false } });
+    setBusy(false);
+    if (e2) setError(tErr(e2.message)); else { toast(t('pw.changed')); onClose(); }
+  };
+  return (
+    <Sheet title={t('pw.title')} onClose={onClose}>
+      <form className="stack" onSubmit={save}>
+        <Field label={t('pw.current')}><input className="input" type="password" autoComplete="current-password" value={cur} onChange={(e) => setCur(e.target.value)} autoFocus /></Field>
+        <Field label={t('auth.newPassword')} hint={t('auth.passwordHint')}><input className="input" type="password" autoComplete="new-password" value={pw} onChange={(e) => setPw(e.target.value)} /></Field>
+        <Field label={t('pw.repeat')}><input className="input" type="password" autoComplete="new-password" value={pw2} onChange={(e) => setPw2(e.target.value)} /></Field>
+        {error && <p className="error-text" role="alert">{error}</p>}
+        <button className="btn btn-primary" disabled={busy || !cur || !pw}>{t('auth.savePassword')}</button>
+      </form>
+    </Sheet>
+  );
+}
+
+function ChangePasswordCard() {
+  const { t } = useApp();
+  const [open, setOpen] = useState(false);
+  return (
+    <section className="card stack">
+      <div className="row"><Icon name="key" /><span className="bold grow">{t('pw.title')}</span></div>
+      <span className="small muted">{t('pw.hint')}</span>
+      <button className="btn btn-secondary" onClick={() => setOpen(true)}>{t('pw.change')}</button>
+      {open && <ChangePasswordSheet onClose={() => setOpen(false)} />}
+    </section>
   );
 }

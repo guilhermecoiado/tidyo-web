@@ -11,6 +11,8 @@ import { cacheGet, cacheSet, perform, useOffline } from '../lib/offline';
 import { compressImage } from '../lib/photos';
 import { addDays, isoDate, startOfDay } from '../lib/format';
 import { driveMin, total, pt } from '../lib/route';
+import { ChangePasswordSheet } from '../pages/Security';
+import { ByYehi } from '../components/kit';
 import type { Lang } from '../lib/i18n';
 
 export type HJob = {
@@ -351,6 +353,7 @@ export function HelperProfile() {
   const nav = useNavigate();
   const [origin, setOrigin] = useState<string | null>(null);
   const [ask, setAsk] = useState(false);
+  const [pwOpen, setPwOpen] = useState(false);
   useEffect(() => { if (membership) supabase.from('memberships').select('origin_address').eq('id', membership.id).maybeSingle().then(({ data }) => setOrigin(data?.origin_address || null)); }, [membership]);
   if (!membership) return null;
   const langs: [Lang, string][] = [['pt-BR', 'Português'], ['en', 'English'], ['es', 'Español']];
@@ -379,7 +382,10 @@ export function HelperProfile() {
         </div>
         <PushToggle />
         <Link className="k-btn k-btn-line" to="/ajuda">{t('more.help')}</Link>
+        <button className="k-btn k-btn-line" onClick={() => setPwOpen(true)}>{t('pw.change')}</button>
         <button className="k-btn k-btn-line" style={{ color: '#9F1F14' }} onClick={() => setAsk(true)}>{t('auth.signout')}</button>
+        {pwOpen && <ChangePasswordSheet onClose={() => setPwOpen(false)} />}
+        <ByYehi style={{ alignSelf: 'center', marginTop: 4 }} />
       </main>
       <HelperBar />
       {ask && <Confirm text={`${t('auth.signout')}?`} confirmLabel={t('auth.signout')} onCancel={() => setAsk(false)} onConfirm={async () => { await supabase.auth.signOut(); nav('/', { replace: true }); window.location.reload(); }} />}

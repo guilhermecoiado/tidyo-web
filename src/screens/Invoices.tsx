@@ -82,7 +82,7 @@ export default function Invoices() {
           { value: 'tobill', label: <>{t('inv.toBillTab')}{!!unbilled?.length && <span className="k-segbadge">{unbilled.length}</span>}</> },
           { value: 'late', label: <>{t('inv.lateTab')}{late.length > 0 && <span className="k-segbadge">{late.length}</span>}</> },
           { value: 'open', label: t('inv.openTab') }, { value: 'paid', label: t('inv.paidTab') }]} />
-        {missingPay && <Link to="/app/mais/recebimento" className="k-note" style={{ textDecoration: 'none' }}><span>{t('inv.addPayInfo')}</span><span className="k-btn k-btn-sm" style={{ background: '#FFFFFF', border: '1px solid #E5C875', color: '#6B4A04', minHeight: 40 }}>{t('inv.add')}</span></Link>}
+        {missingPay && <Link to="/app/mais/recebimento" className="k-note" style={{ textDecoration: 'none' }}><span className="k-clamp2" style={{ fontSize: 11.5, lineHeight: 1.35 }}>{t('inv.addPayInfo')}</span><span className="k-btn k-btn-sm" style={{ background: '#FFFFFF', border: '1px solid #E5C875', color: '#6B4A04', minHeight: 40 }}>{t('inv.add')}</span></Link>}
         {tab === 'late' && late.length > 0 && (
           <button className="k-btn" onClick={() => setRemind(true)} style={{ minHeight: 46, border: '1px solid #F5D3C2', background: '#FFF3EC', color: '#8F2F08', fontSize: 13.5 }}>{t('inv.remindN', { n: late.length })}</button>
         )}

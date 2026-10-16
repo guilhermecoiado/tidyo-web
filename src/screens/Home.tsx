@@ -12,13 +12,15 @@ import { optimize, total, driveMin, pt, type Pt } from '../lib/route';
 import { useUnread } from '../pages/Inbox';
 import { InlineAd, OverlayAd, useAd } from '../components/Ad';
 import { InstallCard } from '../components/InstallCard';
+import { gapVsRegion } from '../lib/regionPricing';
+import { pricingOf } from './NewClient';
 import { JobSheet } from './JobSheet';
 import { getContracts, type Contract } from '../pages/Contracts';
 
 const TAG: Record<string, [string, string]> = {
   conflict: ['#5A2416', '#FFB59C'], route: ['#173F3A', '#5FD4C1'], contract: ['#4A3510', '#F5C66B'], billing: ['#4A1A1A', '#FF9C9C'],
   team: ['#4A3510', '#F5C66B'], gps: ['#5A2416', '#FFB59C'], review: ['#173F3A', '#5FD4C1'], invoice: ['#173F3A', '#5FD4C1'],
-  cover: ['#5A2416', '#FFB59C'], punch: ['#4A3510', '#F5C66B'], hours: ['#173F3A', '#5FD4C1'], insp: ['#2B2A55', '#B9B3FF'],
+  price: ['#4A3510', '#F5C66B'], cover: ['#5A2416', '#FFB59C'], punch: ['#4A3510', '#F5C66B'], hours: ['#173F3A', '#5FD4C1'], insp: ['#2B2A55', '#B9B3FF'],
 };
 export type Insight = { id: string; kind: keyof typeof TAG | string; title: string; detail?: string; cta?: string; act?: () => void; to?: string; toLabel?: string };
 
@@ -198,6 +200,8 @@ function OwnerHome({ members, clients }: { members: Member[]; clients: Client[] 
       cta: t('tidy.seeInvoices'), act: () => nav('/app/cobrancas') }] : []),
     ...(unassigned.length ? [{ id: 'un', kind: 'team', title: t('tidy.unassignedText', { n: unassigned.length }), cta: t('tidy.open'), act: () => { setTidy(false); setOpen(unassigned[0]); } }] : []),
     ...(extra.pendingExp ? [{ id: 'exp', kind: 'review', title: t('tidy.reviewText', { n: extra.pendingExp }), cta: t('tidy.open'), act: () => nav('/app/financas/despesas') }] : []),
+    ...((() => { const g = company?.mode !== 'commercial' ? gapVsRegion(pricingOf(company?.pricing), company?.state) : null;
+      return g && g.pct <= -15 ? [{ id: 'price', kind: 'price', title: t('tidy.priceLowT', { n: -g.pct, st: g.s.state }), detail: t('tidy.priceLowD', { mine: usd(g.mine), avg: usd(g.theirs) }), to: '/app/mais/precos', toLabel: t('tidy.seePrices') }] : []; })()),
     ...(extra.uninvoiced ? [{ id: 'ui', kind: 'invoice', title: t('tidy.uninvoicedText', { n: extra.uninvoiced }), detail: t('tidy.uninvoicedD', { v: usd(extra.uninvoicedCents || 0) }), cta: t('tidy.billNow'), act: () => nav('/app/cobrancas?tab=cobrar') }] : []),
   ];
   const pending = insights.length;
@@ -221,7 +225,7 @@ function OwnerHome({ members, clients }: { members: Member[]; clients: Client[] 
           </div>
         )}
         <div className="k-kpis">
-          <div className="k-kpi"><span className="k-kpi-l">{t('home.kJobs')}</span><span className="k-kpi-v">{jobs ? jobs.length : '–'}</span><span className="k-kpi-n">{t('home.kJobsN', { n: helpersOut })}</span></div>
+          <div className="k-kpi"><span className="k-kpi-l">{t('home.kJobs')}</span><span className="k-kpi-v">{jobs ? jobs.length : '–'}</span><span className="k-kpi-n nw" style={{ fontSize: 11, overflow: 'hidden', textOverflow: 'ellipsis' }}>{t('home.kJobsN', { n: helpersOut })}</span></div>
           <div className="k-kpi"><span className="k-kpi-l">{t('home.receivable')}</span><span className="k-kpi-v">{compactMoney(receivable)}</span><span className="k-kpi-n">{t('home.thisWeek')}</span></div>
           <Link to="/app/financas" className="k-kpi" style={{ textDecoration: 'none', color: 'inherit' }}>
             <span className="k-kpi-l">{t('home.kHealth')}</span>

@@ -5,13 +5,15 @@ import { supabase } from '../lib/supabase';
 import { useApp } from '../lib/session';
 import { Confirm, Sheet } from '../components/ui';
 import { Select } from '../components/pickers';
-import { Avatar, C, Head, OwnerBar, PILL, Segment, SheetActions, Svg, I, colorOf, initials, shortName, usd } from '../components/kit';
+import { Avatar, ByYehi, C, Head, SPARK, OwnerBar, PILL, Segment, SheetActions, Svg, I, colorOf, initials, shortName, usd } from '../components/kit';
 import { getMembers, getServices, memberIndex, type Member, type Service } from '../lib/data';
 import { guessGender, type Gender } from '../lib/gender';
 import { LANG_LABEL, type Lang } from '../lib/i18n';
 import { PRICING, pricingOf } from './NewClient';
 import { SecuritySection } from '../pages/Security';
 import { PushToggle } from '../components/PushToggle';
+import { suggestFor } from '../lib/regionPricing';
+import { US_STATES } from '../pages/Auth';
 
 const IC = {
   company: 'M3 21h18M5 21V7l7-4 7 4v14M9 21v-6h6v6', lang: 'M4 5h8M8 3v2M5 9c1.5 3 4 5 7 6M11 5c-1 4-3 7-7 9M13 21l4-9 4 9M14.5 18h5',
@@ -125,7 +127,7 @@ function SettingsHome() {
           {isAdmin && <Row icon={IC.admin} label={t('ad.open')} to="/admin" />}
           <Row icon={IC.out} label={t('auth.signout')} onClick={() => setAskOut(true)} danger />
         </Group>
-        <p className="k-s12 k-muted" style={{ textAlign: 'center', margin: 0 }}>Tidyo 0.2 · <Link to="/dia">{t('nav.myDay')}</Link></p>
+        <p className="k-s12 k-muted" style={{ textAlign: 'center', margin: 0, display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'center' }}><ByYehi /><span>v1.0 · <Link to="/dia">{t('nav.myDay')}</Link></span></p>
       </main>
       <OwnerBar />
       {askOut && <Confirm text={`${t('auth.signout')}?`} confirmLabel={t('auth.signout')} onCancel={() => setAskOut(false)} onConfirm={async () => { await supabase.auth.signOut(); nav('/', { replace: true }); window.location.reload(); }} />}
@@ -220,6 +222,8 @@ function PricesPage() {
   const [extras, setExtras] = useState<Extra[]>([]);
   const [edit, setEdit] = useState<{ kind: 'svc' | 'extra'; id?: string; name: string; price: string; min: string; type?: 'residential' | 'commercial' } | null>(null);
   const [p, setP] = useState(pricingOf(company?.pricing));
+  const [region, setRegion] = useState((company?.state || 'CT').toUpperCase());
+  const sug = suggestFor(region);
   const load = useCallback(async () => {
     if (!company) return;
     const [s, e] = await Promise.all([getServices(company.id), supabase.from('service_extras').select('id, name, price_cents, minutes, active').eq('company_id', company.id).eq('active', true).order('position')]);
@@ -269,16 +273,41 @@ function PricesPage() {
           ))}
         </div>
       </div>
+      {sug && (
+        <div className="k-dark" style={{ gap: 10 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <Svg d={SPARK} size={18} color={C.mint} />
+            <b style={{ flex: 1, fontSize: 14.5 }}>{t('rp.title')}</b>
+            <div style={{ width: 86, color: C.ink }}><Select value={region} onChange={setRegion} label={t('li.state')}>{US_STATES.map((x) => <option key={x} value={x}>{x}</option>)}</Select></div>
+          </div>
+          <span style={{ fontSize: 12.5, color: '#B9D6D0', lineHeight: 1.45 }}>{t('rp.sub', { st: region, n: Math.round(sug.index) })}</span>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 6 }}>
+            {sug.standard.map((x) => (
+              <span key={x.label} style={{ background: 'rgba(255,255,255,.06)', borderRadius: 10, padding: '8px 6px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+                <span style={{ fontSize: 10.5, color: '#9DB5B0', fontWeight: 700 }} className="nw">{t('rp.bb', { b: x.beds, ba: x.baths })}</span>
+                <b className="num nw" style={{ fontSize: 15 }}>{usd(x.cents)}</b>
+              </span>
+            ))}
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 6, fontSize: 12 }}>
+            <span style={{ display: 'flex', flexDirection: 'column' }}><span style={{ color: '#9DB5B0' }}>{t('rp.deep')}</span><b className="num">{usd(sug.deep3)}</b></span>
+            <span style={{ display: 'flex', flexDirection: 'column' }}><span style={{ color: '#9DB5B0' }}>{t('rp.move')}</span><b className="num">{usd(sug.move3)}</b></span>
+            <span style={{ display: 'flex', flexDirection: 'column' }}><span style={{ color: '#9DB5B0' }}>{t('rp.hour')}</span><b className="num">{usd(sug.hourPerCleaner)}</b></span>
+          </div>
+          <button className="k-btn k-btn-mint" style={{ minHeight: 44 }} onClick={() => { setP({ ...p, res_base: sug.res_base, res_bed: sug.res_bed, res_bath: sug.res_bath }); toast(t('rp.applied')); }}>{t('rp.apply')}</button>
+          <span style={{ fontSize: 11, color: '#7FA39C', lineHeight: 1.4 }}>{t('rp.note')}</span>
+        </div>
+      )}
       <div className="k-card" style={{ gap: 12 }}>
         <span style={{ fontWeight: 800 }}>{t('set.estParams')}</span>
         <span className="k-help">{t('set.estParamsHint')}</span>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 8, alignItems: 'end' }}>
-          <label className="k-field"><span className="k-s12">{t('set.pBase')}</span>{num('res_base', true)}</label>
-          <label className="k-field"><span className="k-s12">{t('set.pBed')}</span>{num('res_bed', true)}</label>
-          <label className="k-field"><span className="k-s12">{t('set.pBath')}</span>{num('res_bath', true)}</label>
-          <label className="k-field"><span className="k-s12">{t('set.pSqft')}</span>{num('com_sqft_hour')}</label>
-          <label className="k-field"><span className="k-s12">{t('set.pCost')}</span>{num('com_cost_hour', true)}</label>
-          <label className="k-field"><span className="k-s12">{t('set.pMargin')}</span>{num('com_margin', false, true)}</label>
+          <label className="k-field"><span className="k-s12 nw">{t('set.pBase')}</span>{num('res_base', true)}</label>
+          <label className="k-field"><span className="k-s12 nw">{t('set.pBed')}</span>{num('res_bed', true)}</label>
+          <label className="k-field"><span className="k-s12 nw">{t('set.pBath')}</span>{num('res_bath', true)}</label>
+          <label className="k-field"><span className="k-s12 nw">{t('set.pSqft')}</span>{num('com_sqft_hour')}</label>
+          <label className="k-field"><span className="k-s12 nw">{t('set.pCost')}</span>{num('com_cost_hour', true)}</label>
+          <label className="k-field"><span className="k-s12 nw">{t('set.pMargin')}</span>{num('com_margin', false, true)}</label>
         </div>
         <button className="k-btn k-btn-fill" onClick={() => save({ pricing: p })}>{t('c.save')}</button>
       </div>

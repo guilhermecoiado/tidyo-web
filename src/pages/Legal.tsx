@@ -61,6 +61,7 @@ export default function Legal({ doc }: { doc: 'terms' | 'privacy' }) {
           <Link to={other === 'terms' ? '/termos' : '/privacidade'} style={{ color: accent, fontWeight: 800 }}>{LEGAL[other][lang]?.title || LEGAL[other].en.title}</Link>
           <Link to="/" style={{ color: muted, fontWeight: 700 }}>{t('lg.back')}</Link>
         </div>
+        <span style={{ fontSize: 12, fontWeight: 700, color: muted }}>{t('lg.byYehi')}</span>
       </main>
     </div>
   );

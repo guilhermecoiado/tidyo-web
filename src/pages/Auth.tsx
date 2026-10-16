@@ -44,6 +44,7 @@ export function AuthShell({ title, sub, children }: { title: string; sub?: strin
       </div>
       <div style={{ flex: 1, width: '100%', maxWidth: 480, margin: '0 auto', boxSizing: 'border-box', padding: '22px 20px calc(24px + env(safe-area-inset-bottom))', display: 'flex', flexDirection: 'column', gap: 14 }}>
         {children}
+        <span style={{ marginTop: 'auto', paddingTop: 12, textAlign: 'center', fontSize: 11.5, fontWeight: 700, color: '#7F9692' }}>Tidyo by YEHI · Developed by YEHI</span>
       </div>
     </div>
   );
@@ -229,7 +230,7 @@ export function MfaPrompt({ onDone }: { onDone: () => void }) {
   );
 }
 
-export function NewPassword() {
+export function NewPassword({ forced = false }: { forced?: boolean }) {
   const { t, tErr, toast } = useApp();
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
@@ -238,13 +239,13 @@ export function NewPassword() {
     e.preventDefault();
     if (password.length < 8) { setError(t('auth.weak')); return; }
     setBusy(true);
-    const { error } = await supabase.auth.updateUser({ password });
+    const { error } = await supabase.auth.updateUser({ password, data: { must_change_password: false } });
     setBusy(false);
     if (error) setError(tErr(error.message));
     else { toast(t('c.saved')); window.location.replace('/'); }
   };
   return (
-    <AuthShell title={t('auth.newPassword')} sub={t('li.newPassSub')}>
+    <AuthShell title={forced ? t('pw.forcedT') : t('auth.newPassword')} sub={forced ? t('pw.forcedS') : t('li.newPassSub')}>
       <form onSubmit={submit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
         <F label={t('auth.newPassword')} hint={t('auth.passwordHint')}><input style={input} type="password" autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} autoFocus /></F>
         {error && <span role="alert" style={{ fontSize: 13, fontWeight: 700, color: '#B8400C' }}>{error}</span>}
