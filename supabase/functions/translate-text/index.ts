@@ -6,7 +6,7 @@ const cors = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers
 // ── Translation: Google Cloud Translation when GOOGLE_SERVER_KEY exists; otherwise MyMemory (free, no key).
 // MyMemory: 5,000 chars/day anonymous, 50,000/day with a contact e-mail (MYMEMORY_EMAIL); 500 bytes per request.
 const GKEY = Deno.env.get('GOOGLE_SERVER_KEY');
-const MM_EMAIL = Deno.env.get('MYMEMORY_EMAIL');
+const MM_EMAIL = Deno.env.get('MYMEMORY_EMAIL') || 'contact.tidyo@gmail.com';
 const short: Record<string, string> = { 'pt-BR': 'pt', en: 'en', es: 'es' };
 const mmCode: Record<string, string> = { 'pt-BR': 'pt-BR', en: 'en-US', es: 'es-ES' };
 
