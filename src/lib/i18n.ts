@@ -1778,6 +1778,8 @@ const D: Dict = {
   'sa.noTranslate': ["A tradução automática ainda não está ativa (chave do Google). Todos recebem em português.", "Auto-translation isn’t on yet (Google key). Everyone gets Portuguese.", "La traducción automática aún no está activa (clave de Google). Todos reciben en portugués."],
   'sa.pushAsk': ["Enviar push para {n} contas?", "Send push to {n} accounts?", "¿Enviar push a {n} cuentas?"],
   'sa.pushSent': ["Push enviado para {n} contas.", "Push sent to {n} accounts.", "Push enviado a {n} cuentas."],
+  'team.editRate': ["Alterar valor por hora", "Change hourly rate", "Cambiar pago por hora"],
+  'team.setRate': ["Definir valor por hora", "Set hourly rate", "Definir pago por hora"],
 };
 
 const idx: Record<Lang, number> = { 'pt-BR': 0, en: 1, es: 2 };

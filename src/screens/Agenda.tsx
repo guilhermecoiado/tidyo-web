@@ -79,7 +79,6 @@ export default function Agenda() {
             </button>
           </div>
           <Segment small value={view} onChange={setView} label={t('ag.view')} options={[{ value: 'day', label: t('ag.day') }, { value: 'week', label: t('ag.weekV') }, { value: 'month', label: t('ag.month') }]} />
-          <Link className="k-iconbtn" to={`/app/rotas?d=${isoDate(day)}`} aria-label={t('rt.title')} title={t('rt.title')} style={{ flex: 'none' }}><Svg d={I.route} size={20} color={C.ink} /></Link>
         </div>
 
         {view !== 'month' && (
@@ -112,7 +111,10 @@ export default function Agenda() {
           <>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
               <span style={{ fontWeight: 800, fontSize: 15 }}>{day.getTime() === today ? `${t('c.today')} · ` : ''}{cap(day.toLocaleDateString(lang, { weekday: 'long', day: 'numeric', month: 'long' }).replace('-feira', ''))}</span>
-              <span className="num nw" style={{ fontSize: 12.5, color: C.muted, fontWeight: 700 }}>{t('ag.nJobs', { n: dayJobs?.length || 0 })} · {hours} h</span>
+              <span style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 'none' }}>
+                <span className="num nw" style={{ fontSize: 12.5, color: C.muted, fontWeight: 700 }}>{t('ag.nJobs', { n: dayJobs?.length || 0 })} · {hours} h</span>
+                {!!dayJobs?.some((j) => j.job_assignments.length) && <Link to={`/app/rotas?d=${isoDate(day)}`} className="nw" style={{ display: 'inline-flex', alignItems: 'center', gap: 4, minHeight: 32, fontSize: 12.5, fontWeight: 800, color: C.accent, textDecoration: 'none' }}><Svg d={I.route} size={15} color={C.accent} />{t('rt.title')}</Link>}
+              </span>
             </div>
             {!dayJobs ? <div className="skeleton" style={{ height: 420, borderRadius: 18 }} /> : dayJobs.length === 0 ? (
               <Empty title={t('home.freeDay')} text={t('ag.freeText')} action={<Link to={`/app/agenda/novo?date=${day.toISOString().slice(0, 10)}`} className="k-btn k-btn-fill" style={{ marginTop: 6, minHeight: 44, borderRadius: 13, fontSize: 13.5 }}>{t('home.newJob')}</Link>} />

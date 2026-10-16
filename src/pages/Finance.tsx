@@ -228,12 +228,11 @@ export function Expenses() {
                     <div className="small muted">{nameOf(e.membership_id)} · {new Date(e.incurred_on + 'T12:00').toLocaleDateString(lang, { day: 'numeric', month: 'short' })}{e.description ? ` · ${e.description}` : ''}</div></div>
                   <span className={`badge ${e.status === 'pending' ? 'b-warn' : e.status === 'rejected' ? 'b-danger' : 'b-ok'}`}>{t(`fin.st.${e.status}`)}</span>
                 </div>
-                <div className="row wrap">
-                  {e.receipt_path && <button className="btn btn-ghost" style={{ minHeight: 40 }} onClick={() => openReceipt(e.receipt_path!)}><Icon name="receipt" size={16} />{t('day.receipt')}</button>}
-                  <span className="spacer" />
+                {e.receipt_path && <button className="btn btn-ghost" style={{ minHeight: 40, alignSelf: 'flex-start', paddingLeft: 0 }} onClick={() => openReceipt(e.receipt_path!)}><Icon name="receipt" size={16} />{t('day.receipt')}</button>}
+                <div style={{ display: 'grid', gridTemplateColumns: e.status === 'pending' ? 'repeat(2, minmax(0, 1fr))' : '1fr', gap: 8 }}>
                   {e.status === 'pending' && <>
-                    <button className="btn btn-secondary" style={{ minHeight: 40 }} onClick={() => setStatus(e, 'rejected')}>{t('fin.reject')}</button>
-                    <button className="btn btn-primary" style={{ minHeight: 40 }} onClick={() => setStatus(e, 'approved')}>{t('fin.approve')}</button>
+                    <button className="btn btn-secondary" style={{ minHeight: 44, whiteSpace: 'nowrap' }} onClick={() => setStatus(e, 'rejected')}>{t('fin.reject')}</button>
+                    <button className="btn btn-primary" style={{ minHeight: 44, whiteSpace: 'nowrap' }} onClick={() => setStatus(e, 'approved')}>{t('fin.approve')}</button>
                   </>}
                   {e.status === 'approved' && e.reimbursable && <button className="btn btn-primary" style={{ minHeight: 40 }} onClick={() => setStatus(e, 'reimbursed')}>{t('fin.markReimbursed')}</button>}
                 </div>
@@ -383,7 +382,7 @@ export function TeamPay() {
                   <span><span className="muted">{t('fin.tips')}</span><br /><b className="num">{money(r.tips, lang)}</b></span>
                   <span><span className="muted">{t('fin.reimb')}</span><br /><b className="num">{money(r.reimb, lang)}</b></span>
                 </div>
-                <button className="btn btn-ghost" style={{ minHeight: 40, alignSelf: 'flex-start' }} onClick={() => { setEditRate(r.m); setRateValue(r.rate ? (r.rate / 100).toFixed(2) : ''); }}>{t('team.rate')}</button>
+                <button className="btn btn-ghost" style={{ minHeight: 40, alignSelf: 'flex-start', paddingLeft: 0 }} onClick={() => { setEditRate(r.m); setRateValue(r.rate ? (r.rate / 100).toFixed(2) : ''); }}>{r.rate ? t('team.editRate') : t('team.setRate')}</button>
               </div>
             ))}
           </div>
