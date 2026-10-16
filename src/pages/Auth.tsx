@@ -152,7 +152,7 @@ export default function Auth({ initial = 'login', title, subtitle }: { initial?:
           </label>
           {err}
           <button type="submit" disabled={busy} style={btn(accent)}>{t('li.createStart')}</button>
-          <span style={{ fontSize: 12, color: muted, textAlign: 'center', lineHeight: 1.5 }}>{t('li.terms1')} {t('li.terms')} {t('li.and')} {t('li.privacy')}.</span>
+          <span style={{ fontSize: 12, color: muted, textAlign: 'center', lineHeight: 1.5 }}>{t('li.terms1')} <a href="/termos" target="_blank" rel="noreferrer" style={{ color: accent, fontWeight: 700 }}>{t('li.terms')}</a> {t('li.and')} <a href="/privacidade" target="_blank" rel="noreferrer" style={{ color: accent, fontWeight: 700 }}>{t('li.privacy')}</a>.</span>
           <button type="button" onClick={() => go('login')} style={link}>{t('li.haveAccount')}</button>
         </form>
       )}

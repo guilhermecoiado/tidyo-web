@@ -26,6 +26,7 @@ import Landing from './pages/Landing';
 import JobWork from './screens/JobWork';
 import { PortalInvite } from './pages/Portal';
 import JoinTeam, { PendingJoin } from './pages/JoinTeam';
+import Legal from './pages/Legal';
 import Portal from './screens/Portal';
 
 function Gate({ need, children }: { need: 'staff' | 'member' | 'portal' | 'any' | 'admin'; children: ReactNode }) {
@@ -78,6 +79,8 @@ function Routed() {
       <Route path="/comecar" element={<Onboarding />} />
       <Route path="/convite" element={<AcceptInvite />} />
       <Route path="/equipe" element={<JoinTeam />} />
+      <Route path="/termos" element={<Legal doc="terms" />} />
+      <Route path="/privacidade" element={<Legal doc="privacy" />} />
       <Route path="/dia" element={<Gate need="member"><MyDay /></Gate>} />
       <Route path="/dia/servico/:id" element={<Gate need="member"><JobWork /></Gate>} />
       <Route path="/portal" element={<Gate need="portal"><Portal /></Gate>} />

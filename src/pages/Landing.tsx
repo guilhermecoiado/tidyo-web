@@ -840,9 +840,9 @@ export default function Landing() {
         <a href="#recursos" style={{ color: "#EAF5F2", textDecoration: "none", fontWeight: "700", fontSize: "14px" }}>Recursos</a>
         <a href="#precos" style={{ color: "#EAF5F2", textDecoration: "none", fontWeight: "700", fontSize: "14px" }}>Preços</a>
         <a href="#duvidas" style={{ color: "#EAF5F2", textDecoration: "none", fontWeight: "700", fontSize: "14px" }}>Ajuda</a>
-        <a href="#" style={{ color: "#EAF5F2", textDecoration: "none", fontWeight: "700", fontSize: "14px" }}>Privacidade</a>
-        <a href="#" style={{ color: "#EAF5F2", textDecoration: "none", fontWeight: "700", fontSize: "14px" }}>Termos</a>
-        <a href="#" style={{ color: "#EAF5F2", textDecoration: "none", fontWeight: "700", fontSize: "14px" }}>Segurança</a>
+        <a href="/privacidade" style={{ color: "#EAF5F2", textDecoration: "none", fontWeight: "700", fontSize: "14px" }}>Privacidade</a>
+        <a href="/termos" style={{ color: "#EAF5F2", textDecoration: "none", fontWeight: "700", fontSize: "14px" }}>Termos</a>
+        <a href="/privacidade#s10" style={{ color: "#EAF5F2", textDecoration: "none", fontWeight: "700", fontSize: "14px" }}>Segurança</a>
         <a href="/entrar" style={{ color: "#5FD4C1", textDecoration: "none", fontWeight: "800", fontSize: "14px" }}>Entrar</a>
       </div>
     </div>

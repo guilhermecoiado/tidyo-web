@@ -1780,6 +1780,8 @@ const D: Dict = {
   'sa.pushSent': ["Push enviado para {n} contas.", "Push sent to {n} accounts.", "Push enviado a {n} cuentas."],
   'team.editRate': ["Alterar valor por hora", "Change hourly rate", "Cambiar pago por hora"],
   'team.setRate': ["Definir valor por hora", "Set hourly rate", "Definir pago por hora"],
+  'lg.index': ["Índice", "Contents", "Índice"],
+  'lg.back': ["Voltar ao Tidyo", "Back to Tidyo", "Volver a Tidyo"],
 };
 
 const idx: Record<Lang, number> = { 'pt-BR': 0, en: 1, es: 2 };
