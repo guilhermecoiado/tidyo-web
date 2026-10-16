@@ -86,15 +86,18 @@ export default function Navigation() {
     setStep(fallback);
     if (!from || !to) return;
     let off = false;
-    loadMaps().then((ok) => {
+    loadMaps().then(async (ok) => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const gm = ok ? (window as any).google?.maps : null;
-      if (!gm?.DirectionsService) return;
-      new gm.DirectionsService().route({ origin: from, destination: to, travelMode: gm.TravelMode.DRIVING }, (r: { routes: { legs: { distance: { value: number }; duration: { value: number }; steps: { distance: { text: string }; instructions: string }[] }[] }[] } | null, status: string) => {
-        if (off || status !== 'OK' || !r) return;
-        const leg = r.routes[0].legs[0], s = leg.steps[0];
-        setStep({ turn: true, dist: s.distance.text, text: strip(s.instructions), min: Math.round(leg.duration.value / 60), mi: leg.distance.value / 1609.34 });
-      });
+      if (!gm?.importLibrary) return;
+      try {
+        // Routes API (Route class) — the legacy Directions Service can't be enabled on new Cloud projects
+        const { Route } = await gm.importLibrary('routes');
+        const { routes } = await Route.computeRoutes({ origin: from, destination: to, travelMode: 'DRIVING', language: lang, units: 'IMPERIAL', fields: ['distanceMeters', 'durationMillis', 'legs'] });
+        const r = routes?.[0], s0 = r?.legs?.[0]?.steps?.[0];
+        if (off || !r || !s0) return;
+        setStep({ turn: true, dist: s0.localizedValues?.distance || `${(s0.distanceMeters / 1609.34).toFixed(1)} mi`, text: strip(s0.instructions || ''), min: Math.round((r.durationMillis || 0) / 60000), mi: (r.distanceMeters || 0) / 1609.34 });
+      } catch { /* keep the straight-line fallback */ }
     });
     return () => { off = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
