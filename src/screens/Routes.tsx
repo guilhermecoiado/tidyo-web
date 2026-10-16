@@ -174,7 +174,7 @@ export default function RoutesScreen() {
 
   return (
     <div className="k-screen">
-      <main className="k-page" style={{ gap: 14, paddingBottom: 40 }}>
+      <main className="k-page nobar" style={{ gap: 14 }}>
         <Head back={() => (window.history.length > 1 ? nav(-1) : nav('/app/agenda'))} title={title}
           sub={<button onClick={() => { setCalMonth(day); setCal(true); }} aria-label={t('ag.pickDate')} style={{ display: 'inline-flex', alignItems: 'center', gap: 5, background: 'none', border: 0, padding: 0, minHeight: 24, cursor: 'pointer', font: 'inherit', color: 'inherit', whiteSpace: 'nowrap' }}>
             <Svg d={I.cal} size={13} color={C.accent} />{dateText}{calc ? ` · ${t('ro.leaves', { t: clock(calc.leave) })}` : ''}

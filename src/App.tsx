@@ -13,17 +13,18 @@ import FinanceScreen from './screens/Finance';
 import Invoices from './screens/Invoices';
 import Settings from './screens/Settings';
 import Account from './screens/Account';
-import MyDay from './pages/MyDay';
-import Inbox, { Help } from './pages/Inbox';
+import MyDay, { HelperPay, HelperProfile } from './screens/MyDay';
+import Help from './screens/Help';
+import Central from './screens/Central';
 import Admin from './pages/Admin';
 import { MfaPrompt } from './pages/Security';
 import Contracts from './pages/Contracts';
-import { ChatList, ChatThread } from './pages/Chat';
+import ChatScreen from './screens/Chat';
 import RoutesScreen from './screens/Routes';
 import Navigation from './screens/Navigation';
 import { Expenses, TeamPay } from './pages/Finance';
 import Landing from './pages/Landing';
-import JobWork from './pages/JobWork';
+import JobWork from './screens/JobWork';
 import Portal, { PortalInvite } from './pages/Portal';
 
 function Gate({ need, children }: { need: 'staff' | 'member' | 'portal' | 'any' | 'admin'; children: ReactNode }) {
@@ -85,12 +86,14 @@ function Routed() {
       <Route path="/app/financas/despesas" element={<Gate need="staff"><Expenses /></Gate>} />
       <Route path="/app/financas/equipe" element={<Gate need="staff"><TeamPay /></Gate>} />
       <Route path="/app/contratos" element={<Gate need="staff"><Contracts /></Gate>} />
-      <Route path="/mensagens" element={<Gate need="any"><ChatList /></Gate>} />
-      <Route path="/mensagens/:id" element={<Gate need="any"><ChatThread /></Gate>} />
+      <Route path="/mensagens" element={<Gate need="any"><Central /></Gate>} />
+      <Route path="/mensagens/:id" element={<Gate need="any"><ChatScreen /></Gate>} />
       <Route path="/app/rotas" element={<Gate need="staff"><RoutesScreen /></Gate>} />
       <Route path="/app/rotas/navegacao" element={<Gate need="staff"><Navigation /></Gate>} />
       <Route path="/dia/navegacao" element={<Gate need="member"><Navigation /></Gate>} />
-      <Route path="/avisos" element={<Gate need="any"><Inbox /></Gate>} />
+      <Route path="/dia/pagamentos" element={<Gate need="member"><HelperPay /></Gate>} />
+      <Route path="/dia/perfil" element={<Gate need="member"><HelperProfile /></Gate>} />
+      <Route path="/avisos" element={<Gate need="any"><Central /></Gate>} />
       <Route path="/ajuda" element={<Gate need="any"><Help /></Gate>} />
       <Route path="/admin" element={<Gate need="admin"><Admin /></Gate>} />
       <Route path="/app/mais" element={<Gate need="staff"><Settings /></Gate>} />

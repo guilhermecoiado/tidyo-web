@@ -73,7 +73,7 @@ export function OwnerBar() {
 export function HelperBar() {
   const { t } = useApp();
   const items: [string, string, string, boolean?][] = [
-    ['/dia', I.home, t('nav.myDay')], ['/mensagens', I.chat, t('nav.messages')], ['/dia/pagamentos', I.pay, t('nav.pay')], ['/dia/perfil', I.person, t('nav.profile')],
+    ['/dia', I.home, t('nav.today')], ['/mensagens', I.chat, t('nav.messages')], ['/dia/pagamentos', I.pay, t('nav.pay')], ['/dia/perfil', I.person, t('nav.profile')],
   ];
   return <Bar items={items} cols={4} />;
 }
