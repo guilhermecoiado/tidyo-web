@@ -1238,7 +1238,7 @@ const D: Dict = {
   'ro.restore': ["Restaurar sugestão do Tidy", "Restore Tidy’s suggestion", "Restaurar sugerencia de Tidy"],
   'ro.sent': ["Rota enviada. {name} recebeu o push com a ordem e os endereços.", "Route sent. {name} got a push with the order and addresses.", "Ruta enviada. {name} recibió el aviso con el orden y las direcciones."],
   'ro.apply': ["Aplicar rota e avisar {name}", "Apply route and notify {name}", "Aplicar ruta y avisar a {name}"],
-  'ro.seeNav': ["Ver como {name} recebe a navegação", "See how {name} gets the navigation", "Ver cómo {name} recibe la navegación"],
+  'ro.seeNav': ["Ver a rota como {name} recebe", "See the route as {name} gets it", "Ver la ruta como la recibe {name}"],
   'ro.ask': ["Enviar a rota para {name}?", "Send the route to {name}?", "¿Enviar la ruta a {name}?"],
   'ro.askManual': ["Você ajustou a ordem manualmente. {name} recebe a lista no app com endereços e horários de chegada.", "You adjusted the order by hand. {name} gets the list in the app with addresses and arrival times.", "Ajustaste el orden a mano. {name} recibe la lista en la app con direcciones y horarios de llegada."],
   'ro.askTidy': ["Rota sugerida pelo Tidy. {name} recebe a lista no app com endereços e horários de chegada.", "Route suggested by Tidy. {name} gets the list in the app with addresses and arrival times.", "Ruta sugerida por Tidy. {name} recibe la lista en la app con direcciones y horarios de llegada."],
@@ -1278,7 +1278,7 @@ const D: Dict = {
   'nv.otherApp': ["Abrir no Waze / Maps", "Open in Waze / Maps", "Abrir en Waze / Maps"],
   'nv.arrived': ["Cheguei", "I’m here", "Llegué"],
   'nv.whichApp': ["Abrir a rota em qual app?", "Open the route in which app?", "¿Abrir la ruta en qué app?"],
-  'nv.whichText': ["O Tidyo envia o endereço da próxima casa. Quando você voltar, o check-in continua aqui.", "Tidyo sends the next home’s address. When you come back, check-in continues here.", "Tidyo envía la dirección de la próxima casa. Cuando vuelvas, el check-in sigue aquí."],
+  'nv.whichText': ["O Tidyo abre o endereço no app que você preferir. Quando chegar, volte aqui e toque em Cheguei.", "Tidyo opens the address in the app you prefer. When you get there, come back and tap I’m here.", "Tidyo abre la dirección en la app que prefieras. Al llegar, vuelve y toca Llegué."],
   'nv.gmapsNote': ["Trânsito em tempo real", "Live traffic", "Tráfico en tiempo real"],
   'nv.wazeNote': ["Alertas de blitz e acidentes", "Police and crash alerts", "Alertas de controles y accidentes"],
   'nv.appleNote': ["Só no iPhone", "iPhone only", "Solo en iPhone"],
@@ -1853,6 +1853,13 @@ const D: Dict = {
   'tidy.billNow': ["Ver o que cobrar", "See what to bill", "Ver qué cobrar"],
   'c.soon': ["Em breve", "Coming soon", "Próximamente"],
   'nv.soonText': ["Navegação no app em breve. Abra no Waze ou no Maps.", "In-app navigation is coming soon. Open Waze or Maps.", "Navegación en la app muy pronto. Abre Waze o Maps."],
+  'nv.title': ["Rota de hoje", "Today’s route", "Ruta de hoy"],
+  'nv.routeOf': ["Rota de {name}", "{name}’s route", "Ruta de {name}"],
+  'nv.go': ["Ir até lá", "Get directions", "Cómo llegar"],
+  'nv.changeApp': ["Trocar app de navegação", "Change navigation app", "Cambiar app de navegación"],
+  'nv.stops': ["Paradas na ordem do Tidy", "Stops in Tidy’s order", "Paradas en el orden de Tidy"],
+  'nv.openStop': ["Abrir rota até {name}", "Directions to {name}", "Ruta hasta {name}"],
+  'nv.fullRoute': ["Rota completa no Google Maps", "Full route in Google Maps", "Ruta completa en Google Maps"],
 };
 
 const idx: Record<Lang, number> = { 'pt-BR': 0, en: 1, es: 2 };

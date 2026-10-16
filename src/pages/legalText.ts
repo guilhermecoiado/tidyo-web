@@ -52,7 +52,7 @@ const privacy: Record<Lang, Doc> = {
       ], list: [
         'Infraestrutura, banco de dados, autenticação e armazenamento de fotos: Supabase.',
         'Hospedagem do aplicativo: Netlify.',
-        'Mapas, geolocalização de endereços e tradução: Google (Maps Platform e Cloud Translation).',
+        'Localização de endereços: U.S. Census Geocoder e OpenStreetMap (Nominatim). Tradução de mensagens: MyMemory (Translated). Navegação: o app de mapas que você escolher (Google Maps, Waze ou Apple Maps), aberto por você.',
         'Envio de emails e notificações: provedores de email e de push do navegador.',
         'Pagamentos online, quando forem ativados: processador de pagamentos (por exemplo, Stripe). O Tidyo não guarda dados de cartão.',
         'Autoridades, quando exigido por lei ou ordem judicial.',
@@ -135,7 +135,7 @@ const privacy: Record<Lang, Doc> = {
       ], list: [
         'Infrastructure, database, authentication and photo storage: Supabase.',
         'App hosting: Netlify.',
-        'Maps, address geocoding and translation: Google (Maps Platform and Cloud Translation).',
+        'Address geocoding: U.S. Census Geocoder and OpenStreetMap (Nominatim). Message translation: MyMemory (Translated). Navigation: the maps app you choose (Google Maps, Waze or Apple Maps), opened by you.',
         'Email and notification delivery: email and browser push providers.',
         'Online payments, once enabled: a payment processor (for example, Stripe). Tidyo does not store card data.',
         'Authorities, when required by law or court order.',
@@ -214,7 +214,7 @@ const privacy: Record<Lang, Doc> = {
       ], list: [
         'Infraestructura, base de datos, autenticación y almacenamiento de fotos: Supabase.',
         'Alojamiento de la app: Netlify.',
-        'Mapas, geolocalización de direcciones y traducción: Google (Maps Platform y Cloud Translation).',
+        'Geolocalización de direcciones: U.S. Census Geocoder y OpenStreetMap (Nominatim). Traducción de mensajes: MyMemory (Translated). Navegación: la app de mapas que elijas (Google Maps, Waze o Apple Maps), abierta por ti.',
         'Envío de correos y notificaciones: proveedores de correo y de push del navegador.',
         'Pagos en línea, cuando se activen: un procesador de pagos (por ejemplo, Stripe). Tidyo no guarda datos de tarjeta.',
         'Autoridades, cuando lo exija la ley o una orden judicial.',
