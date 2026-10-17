@@ -75,9 +75,9 @@ export function OwnerBar() {
   const items: [string, string, string, boolean?, number?][] = [
     ['/app', I.home, t('nav.today')],
     ['/app/agenda', I.cal, t('nav.schedule'), pathname.startsWith('/app/rotas')],
-    ['/app/clientes', I.users, t('nav.clients')],
-    ['/app/financas', I.chart, t('nav.finance'), pathname.startsWith('/app/cobrancas'), unbilled],
-    ['/app/mais', I.more, t('nav.more'), pathname.startsWith('/app/mais/') || pathname.startsWith('/app/contratos') || pathname.startsWith('/app/conta')],
+    ['/app/clientes', I.users, t('nav.clients'), pathname.startsWith('/app/contratos')],
+    ['/app/financas', I.chart, t('nav.finance'), pathname.startsWith('/app/cobrancas') || pathname.startsWith('/app/financas/'), unbilled],
+    ['/app/mais', I.more, t('nav.more'), pathname.startsWith('/app/mais/') || pathname.startsWith('/app/conta')],
   ];
   return <Bar items={items} cols={5} />;
 }

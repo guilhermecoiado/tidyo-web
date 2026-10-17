@@ -77,7 +77,8 @@ export default function Clients() {
       <main className="k-page" style={{ gap: 14 }}>
         <div className="k-head">
           <span className="k-title" style={{ flex: 1, fontSize: 22 }}>{t('nav.clients')}</span>
-          <button className="k-btn k-btn-line" style={{ minHeight: 40, borderRadius: 12, fontSize: 12.5, padding: '0 12px' }} onClick={() => setImp(true)}>{t('cl.import')}</button>
+          {company?.mode !== 'residential' && <Link to="/app/contratos" className="k-btn k-btn-line nw" style={{ minHeight: 40, borderRadius: 12, fontSize: 12.5, padding: '0 12px' }}>{t('ct.title')}</Link>}
+          <button className="k-btn k-btn-line nw" style={{ minHeight: 40, borderRadius: 12, fontSize: 12.5, padding: '0 12px' }} onClick={() => setImp(true)}>{t('cl.import')}</button>
           <Link to="/app/clientes/novo" className="k-iconbtn" style={{ background: C.accent, border: 0 }} aria-label={t('cl.new')}><Svg d={I.plus} size={20} color="#FFFFFF" w={2.4} /></Link>
         </div>
         <label style={{ display: 'block' }}>

@@ -155,9 +155,13 @@ export default function Finance() {
               <Svg d={I.cal} size={14} color={C.accent} />{monthName.charAt(0).toUpperCase() + monthName.slice(1)}{isCurrent ? ` · ${t('fin.untilDay', { n: now.getDate() })}` : ''}
             </button>
           </div>
-          <Link to={unbilled ? '/app/cobrancas?tab=cobrar' : '/app/cobrancas'} className="k-btn k-btn-line" style={{ minHeight: 40, borderRadius: 12, fontSize: 12.5, padding: '0 12px', position: 'relative' }}>{t('fin.invoices')}{unbilled > 0 && <span className="k-badge sm" style={{ top: -7, right: -7 }}>{unbilled}</span>}</Link>
           <button className="k-btn k-btn-line" style={{ minHeight: 40, borderRadius: 12, fontSize: 12.5, padding: '0 12px' }} onClick={() => setSheet('rep')}>{t('fin.reports')}</button>
         </div>
+        <nav className="k-fintabs" aria-label={t('nav.finance')}>
+          <Link to={unbilled ? '/app/cobrancas?tab=cobrar' : '/app/cobrancas'}><Svg d={I.receipt} size={18} color={C.accent} /><span>{t('fin.invoices')}</span>{unbilled > 0 && <span className="k-badge sm" style={{ top: 4, right: 6 }}>{unbilled}</span>}</Link>
+          <Link to="/app/financas/despesas"><Svg d={I.pay} size={18} color={C.accent} /><span>{t('fin.expenses')}</span>{pendingExp > 0 && <span className="k-badge sm" style={{ top: 4, right: 6 }}>{pendingExp}</span>}</Link>
+          <Link to="/app/financas/equipe"><Svg d={I.users} size={18} color={C.accent} /><span>{t('fin.teamShort')}</span></Link>
+        </nav>
 
         {unbilled > 0 && (
           <Link to="/app/cobrancas?tab=cobrar" className="k-note ok" style={{ textDecoration: 'none' }}>
@@ -297,7 +301,7 @@ export default function Finance() {
   );
 }
 
-function ExpenseSheet({ onClose, onSaved }: { onClose: () => void; onSaved: (id: string, label: string) => void }) {
+export function ExpenseSheet({ onClose, onSaved }: { onClose: () => void; onSaved: (id: string, label: string) => void }) {
   const { t, tErr, company, toast } = useApp();
   const [amount, setAmount] = useState('');
   const [cat, setCat] = useState<string>('supplies');

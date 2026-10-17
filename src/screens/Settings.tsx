@@ -96,11 +96,9 @@ function SettingsHome() {
           <Row icon={IC.check} label={t('set.checklists')} sub={counts.templates ? t('set.checklistsN', { n: counts.templates }) : t('set.checklistsSub')} to="/app/mais/checklists" />
           <Row icon={IC.clock} label={t('set.cancel')} sub={company?.cancellation_fee_cents ? t('set.cancelSub', { v: usd(company.cancellation_fee_cents), h: company.cancellation_window_hours || 24 }) : t('set.cancelNone')} to="/app/mais/cancelamento" />
           <Row icon={IC.box} label={t('set.stock')} sub={counts.supplies ? t('set.stockSub', { n: counts.supplies, k: counts.low }) : t('set.stockNone')} to="/app/mais/estoque" />
-          {company?.mode !== 'residential' && <Row icon={IC.contract} label={t('ct.title')} sub={t('ins.title')} to="/app/contratos" />}
         </Group>
         <Group title={t('set.gTeam')}>
           <Row icon={IC.team} label={t('set.team')} sub={t('set.teamSub', { n: counts.team })} to="/app/mais/equipe" />
-          <Row icon={IC.pay} label={t('set.teamPay')} sub={t('set.teamPaySub')} to="/app/financas/equipe" />
         </Group>
         <Group title={t('set.gMoney')}>
           <Row icon={IC.money} label={t('set.payInfo')} sub={payWays || t('set.payInfoNone')} to="/app/mais/recebimento" />

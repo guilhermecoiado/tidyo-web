@@ -105,6 +105,9 @@
 .k-money i { font-style: normal; font-family: 'Bricolage Grotesque', sans-serif; font-size: 22px; font-weight: 700; color: #566965; }
 .k-money input { flex: 1; min-width: 0; border: 0; background: transparent; outline: none; font-family: 'Bricolage Grotesque', sans-serif; font-size: 24px; font-weight: 700; color: #0F1F1C; font-variant-numeric: tabular-nums; padding: 0; }
 .k-chargebox { display: flex; align-items: center; gap: 12px; padding: 12px; border-radius: 14px; background: #E3F1EE; border: 1px solid #BFE3DB; }
+.k-fintabs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.k-fintabs a { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; min-height: 64px; border-radius: 14px; background: #FFFFFF; border: 1px solid #DFE7E5; text-decoration: none; color: #0F1F1C; font-weight: 800; font-size: 12.5px; }
+.k-fintabs a span:not(.k-badge) { white-space: nowrap; }
 .k-statseg { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; padding: 4px; background: #E4ECEA; border-radius: 14px; }
 .k-statseg button { min-height: 48px; min-width: 0; border: 0; border-radius: 11px; background: transparent; color: #566965; font-family: inherit; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; padding: 4px 4px; }
 .k-statseg b { font-size: 15px; font-weight: 800; line-height: 1.1; color: #0F1F1C; font-variant-numeric: tabular-nums; }

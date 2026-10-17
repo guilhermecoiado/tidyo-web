@@ -22,7 +22,7 @@ import Contracts from './pages/Contracts';
 import ChatScreen from './screens/Chat';
 import RoutesScreen from './screens/Routes';
 import Navigation from './screens/Navigation';
-import { Expenses, TeamPay } from './pages/Finance';
+import { Expenses, TeamPay } from './screens/FinanceTeam';
 import Landing from './pages/Landing';
 import JobWork from './screens/JobWork';
 import { PortalInvite } from './pages/Portal';
