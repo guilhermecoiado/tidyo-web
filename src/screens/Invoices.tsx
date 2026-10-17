@@ -141,8 +141,8 @@ function ToBill({ list, onCharge }: { list: Unbilled[] | null; onCharge: (client
             <div style={{ display: 'flex', flexDirection: 'column' }}>
               {jobs.slice(0, 4).map((j, i) => (
                 <div key={j.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '7px 0', borderTop: i ? `1px solid ${C.soft}` : 0, fontSize: 13 }}>
-                  <span className="nw" style={{ color: C.muted, width: 56, flex: 'none' }}>{shortDay(j.scheduled_start, lang)}</span>
-                  <span className="k-ell" style={{ flex: 1, minWidth: 0 }}>{j.services?.name || t('inv.cleaning')}{(j.extras || []).length ? ` + ${(j.extras || []).length} extra` : ''}</span>
+                  <span className="nw" style={{ color: C.muted, width: 56, flex: 'none' }}>{j.contract_id ? monthShort(j.billing_month!, lang) : shortDay(j.scheduled_start, lang)}</span>
+                  <span className="k-ell" style={{ flex: 1, minWidth: 0 }}>{j.contract_id ? t('inv.contractMonth') : j.services?.name || t('inv.cleaning')}{(j.extras || []).length ? ` + ${(j.extras || []).length} extra` : ''}</span>
                   <span className="num nw" style={{ fontWeight: 700 }}>{usd(j.price_cents, true)}</span>
                 </div>
               ))}
@@ -155,6 +155,9 @@ function ToBill({ list, onCharge }: { list: Unbilled[] | null; onCharge: (client
     </div>
   );
 }
+
+const monthShort = (m: string, lang: string) => new Date(m + 'T12:00').toLocaleDateString(lang, { month: 'short' }).replace('.', '');
+const monthLong = (m: string, lang: string) => new Date(m + 'T12:00').toLocaleDateString(lang, { month: 'long', year: 'numeric' });
 
 export function NewCharge({ preset, jobId, onClose, onSaved }: { preset: string; jobId?: string; onClose: () => void; onSaved: () => void }) {
   const { t, tErr, lang, company, toast } = useApp();
@@ -181,6 +184,7 @@ export function NewCharge({ preset, jobId, onClose, onSaved }: { preset: string;
   const ct = (k: string) => translate(cl, k);
   const lines = useMemo(() => [
     ...(jobs || []).filter((j) => pick[j.id]).flatMap((j) => {
+      if (j.contract_id) return [{ job_id: null as string | null, contract_id: j.contract_id, billing_month: j.billing_month, description: `${ct('inv.contractMonth')} · ${monthLong(j.billing_month!, cl)}`, unit_cents: j.price_cents }];
       const exTotal = (j.extras || []).reduce((s, e) => s + e.price_cents, 0);
       const d = shortDay(j.scheduled_start, cl);
       return [{ job_id: j.id, description: `${j.services?.name || ct('inv.cleaning')} · ${d}`, unit_cents: j.price_cents - exTotal },
@@ -211,7 +215,7 @@ export function NewCharge({ preset, jobId, onClose, onSaved }: { preset: string;
         {!jobs ? <div className="skeleton" style={{ height: 30 }} /> : jobs.length === 0 && !extra.length ? <span className="k-s125 k-muted">{t('inv.nothing')}</span> : jobs.map((j) => (
           <label key={j.id} className="check" style={{ alignItems: 'center', gap: 10, fontSize: 13.5 }}>
             <input type="checkbox" checked={!!pick[j.id]} onChange={() => setPick({ ...pick, [j.id]: !pick[j.id] })} />
-            <span style={{ flex: 1, minWidth: 0 }}>{j.services?.name || t('inv.cleaning')} · {shortDay(j.scheduled_start, lang)}{(j.extras || []).length ? ` + ${(j.extras || []).length} extra` : ''}</span>
+            <span style={{ flex: 1, minWidth: 0 }}>{j.contract_id ? `${t('inv.contractMonth')} · ${monthLong(j.billing_month!, lang)}` : `${j.services?.name || t('inv.cleaning')} · ${shortDay(j.scheduled_start, lang)}`}{(j.extras || []).length ? ` + ${(j.extras || []).length} extra` : ''}</span>
             <b className="num">{usd(j.price_cents, true)}</b>
           </label>
         ))}

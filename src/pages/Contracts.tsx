@@ -1,20 +1,21 @@
-import { useCallback, useEffect, useState, type FormEvent } from 'react';
+import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react';
+import { Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useApp } from '../lib/session';
-import { DateField, Select } from '../components/pickers';
+import { DateField, Select, TimeField } from '../components/pickers';
 import { Field, Icon, Segmented, Sheet } from '../components/ui';
-import { C, Empty, Head, OwnerBar, PILL, Segment, display, usd } from '../components/kit';
-import { getClients, type Client } from '../lib/data';
-import { addDays, isoDate, money, toCents } from '../lib/format';
+import { C, Empty, Head, OwnerBar, PILL, Segment, SheetActions, Stepper, display, usd } from '../components/kit';
+import { getClients, getMembers, type Client, type Member } from '../lib/data';
+import { addDays, isoDate, startOfDay, toCents } from '../lib/format';
 
 export type Contract = {
   id: string; client_id: string; property_id: string; status: string; monthly_value_cents: number; hours_per_week: number | null;
-  starts_on: string | null; renews_on: string | null; last_adjusted_on: string | null; geofence_radius_m: number;
+  starts_on: string | null; renews_on: string | null; last_adjusted_on: string | null; geofence_radius_m: number; walkthrough?: { weekdays?: number[]; after?: string } | null;
   clients: { name: string } | null; properties: { address_line1: string; city: string } | null;
 };
 type Inspection = { id: string; score: number | null; items: { area: string; ok: boolean; note?: string }[]; shared_with_client: boolean; inspected_at: string };
 
-const SELECT = 'id, client_id, property_id, status, monthly_value_cents, hours_per_week, starts_on, renews_on, last_adjusted_on, geofence_radius_m, clients(name), properties(address_line1, city)';
+const SELECT = 'id, client_id, property_id, status, monthly_value_cents, hours_per_week, starts_on, renews_on, last_adjusted_on, geofence_radius_m, walkthrough, clients(name), properties(address_line1, city)';
 
 export async function getContracts(companyId: string) {
   const { data } = await supabase.from('contracts').select(SELECT).eq('company_id', companyId).order('renews_on', { ascending: true, nullsFirst: false });
@@ -153,6 +154,14 @@ function ContractDetail({ contract, onClose, onChanged }: { contract: Contract; 
   const [newInsp, setNewInsp] = useState(false);
   const [adjust, setAdjust] = useState(false);
   const [newValue, setNewValue] = useState((contract.monthly_value_cents / 100).toFixed(2));
+  const [upcoming, setUpcoming] = useState<{ n: number; last: string } | null>(null);
+  const [gen, setGen] = useState(false);
+  const loadUpcoming = useCallback(async () => {
+    const { data } = await supabase.from('jobs').select('scheduled_start').eq('contract_id', contract.id).eq('status', 'scheduled').gte('scheduled_start', new Date().toISOString()).order('scheduled_start', { ascending: false }).limit(200);
+    const l = (data || []) as { scheduled_start: string }[];
+    setUpcoming({ n: l.length, last: l[0]?.scheduled_start || '' });
+  }, [contract.id]);
+  useEffect(() => { loadUpcoming(); }, [loadUpcoming]);
 
   const load = useCallback(async () => {
     const since = addDays(new Date(), -28).toISOString();
@@ -194,6 +203,16 @@ function ContractDetail({ contract, onClose, onChanged }: { contract: Contract; 
         )}
         {outside > 0 && <span className="small" style={{ color: 'var(--danger-fg)' }}>{t('ct.outside', { n: outside })}</span>}
       </section>
+      {contract.status === 'active' && (
+        <section className="k-card" style={{ gap: 10 }}>
+          <span style={{ fontSize: 11, fontWeight: 800, color: C.muted, textTransform: 'uppercase' }}>{t('ct.visits')}</span>
+          <span style={{ fontSize: 13.5, lineHeight: 1.45 }}>{upcoming === null ? '…' : upcoming.n ? t('ct.visitsUntil', { n: upcoming.n, d: new Date(upcoming.last).toLocaleDateString(lang, { day: 'numeric', month: 'short' }).replace('.', '') }) : t('ct.noVisits')}</span>
+          <div className="k-pair">
+            <button className="k-btn k-btn-fill" onClick={() => setGen(true)}>{t('ct.genVisits')}</button>
+            <Link className="k-btn k-btn-line" to={`/app/cobrancas?nova=${contract.client_id}`}>{t('ct.billMonth')}</Link>
+          </div>
+        </section>
+      )}
       <div className="k-pair">
         <button className="k-btn k-btn-line" onClick={() => setAdjust(true)}>{t('ct.adjust')}</button>
         {contract.status === 'proposal' && <button className="k-btn k-btn-fill" onClick={() => setStatus('active')}>{t('ct.activate')}</button>}
@@ -216,7 +235,63 @@ function ContractDetail({ contract, onClose, onChanged }: { contract: Contract; 
           </div>
         ))}
       </section>
+      {gen && <GenerateVisits contract={contract} lastScheduled={upcoming?.last || ''} onClose={() => setGen(false)} onDone={() => { setGen(false); loadUpcoming(); }} />}
       {newInsp && company && <InspectionForm contractId={contract.id} companyId={company.id} inspectorId={membership?.id || null} onClose={() => setNewInsp(false)} onSaved={() => { setNewInsp(false); load(); }} />}
+    </Sheet>
+  );
+}
+
+const WD = [1, 2, 3, 4, 5, 6, 0];
+
+/** Creates the contract's visits on the chosen weekdays (no price: the contract is billed by month) */
+function GenerateVisits({ contract, lastScheduled, onClose, onDone }: { contract: Contract; lastScheduled: string; onClose: () => void; onDone: () => void }) {
+  const { t, tErr, lang, company, toast } = useApp();
+  const wt = contract.walkthrough || {};
+  const [days, setDays] = useState<number[]>(wt.weekdays?.length ? wt.weekdays : [1, 3, 5]);
+  const [time, setTime] = useState(wt.after && /^\d{2}:\d{2}$/.test(wt.after) ? wt.after : '18:00');
+  const perVisit = contract.hours_per_week && days.length ? Math.max(0.5, Math.round((contract.hours_per_week / days.length) * 2) / 2) : 2;
+  const [hours, setHours] = useState(perVisit);
+  const [weeks, setWeeks] = useState(4);
+  const [members, setMembers] = useState<Member[]>([]);
+  const [helper, setHelper] = useState('');
+  const [busy, setBusy] = useState(false);
+  useEffect(() => { if (company) getMembers(company.id).then((m) => setMembers(m.filter((x) => x.status === 'active'))); }, [company]);
+  // start the day after the last visit already on the schedule (or tomorrow)
+  const from = startOfDay(addDays(lastScheduled ? new Date(lastScheduled) : new Date(), 1));
+  const dates = useMemo(() => {
+    const out: Date[] = [];
+    for (let i = 0; i < weeks * 7; i++) {
+      const d = addDays(from, i);
+      if (days.includes(d.getDay())) { const [h, m] = time.split(':').map(Number); d.setHours(h, m, 0, 0); out.push(d); }
+    }
+    return out;
+  }, [from.getTime(), weeks, days, time]); // eslint-disable-line react-hooks/exhaustive-deps
+  const save = async () => {
+    if (!company || !dates.length) return;
+    setBusy(true);
+    const { data: jobs, error } = await supabase.from('jobs').insert(dates.map((d) => ({
+      company_id: company.id, client_id: contract.client_id, property_id: contract.property_id, contract_id: contract.id,
+      scheduled_start: d.toISOString(), scheduled_end: new Date(d.getTime() + hours * 36e5).toISOString(), price_cents: 0,
+    }))).select('id');
+    if (!error && helper && jobs?.length) await supabase.from('job_assignments').insert(jobs.map((j) => ({ job_id: j.id, membership_id: helper, company_id: company.id, is_lead: true })));
+    setBusy(false);
+    if (error) toast(tErr(error.message)); else { toast(t('ct.genDone', { n: dates.length })); onDone(); }
+  };
+  const wdName = (d: number) => new Date(2026, 0, 4 + d).toLocaleDateString(lang, { weekday: 'short' }).replace('.', '');
+  return (
+    <Sheet title={t('ct.genVisits')} onClose={onClose}>
+      <span className="k-lbl">{t('ct.weekdays')}</span>
+      <div className="k-optgrid sm">
+        {WD.map((d) => <button key={d} type="button" aria-pressed={days.includes(d)} onClick={() => setDays(days.includes(d) ? days.filter((x) => x !== d) : [...days, d])}>{wdName(d)}</button>)}
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 10 }}>
+        <label className="k-field"><span>{t('ct.startTime')}</span><TimeField value={time} onChange={setTime} label={t('ct.startTime')} from={5} to={23} /></label>
+        <label className="k-field"><span>{t('ct.hoursVisit')}</span><Stepper value={hours} onChange={setHours} min={0.5} max={12} step={0.5} label={t('ct.hoursVisit')} /></label>
+      </div>
+      <label className="k-field"><span>{t('ct.weeks')}</span><Stepper value={weeks} onChange={setWeeks} min={1} max={12} label={t('ct.weeks')} /></label>
+      <label className="k-field"><span>{t('job.helper')}</span><Select value={helper} onChange={setHelper} label={t('job.helper')}><option value="">{t('c.unassigned')}</option>{members.map((m) => <option key={m.id} value={m.id}>{m.display_name}</option>)}</Select></label>
+      <span className="k-help">{dates.length ? t('ct.genSummary', { n: dates.length, a: dates[0].toLocaleDateString(lang, { day: 'numeric', month: 'short' }).replace('.', ''), b: dates[dates.length - 1].toLocaleDateString(lang, { day: 'numeric', month: 'short' }).replace('.', '') }) : t('ct.pickDays')}</span>
+      <SheetActions cancel={t('c.cancel')} onCancel={onClose} confirm={t('ct.genN', { n: dates.length })} onConfirm={save} disabled={busy || !dates.length} />
     </Sheet>
   );
 }
