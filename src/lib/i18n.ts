@@ -1901,7 +1901,7 @@ const D: Dict = {
   'sa.copied': ["Copiada.", "Copied.", "Copiada."],
   'sa.lastSeen': ["último acesso {d}", "last seen {d}", "último acceso {d}"],
   'sa.neverSeen': ["nunca entrou", "never signed in", "nunca entró"],
-  'lg.byYehi': ["O Tidyo é um produto da YEHI · Tidyo by YEHI", "Tidyo is a YEHI product · Tidyo by YEHI", "Tidyo es un producto de YEHI · Tidyo by YEHI"],
+  'lg.byYehi': ["Tidyo by YEHI", "Tidyo by YEHI", "Tidyo by YEHI"],
   'sa.subTitle': ["Plano e assinatura", "Plan and subscription", "Plan y suscripción"],
   'sa.addCommercial': ["Incluir Comercial (combo com 20% off)", "Include Commercial (20% off combo)", "Incluir Comercial (combo con 20% off)"],
   'sa.tier': ["Faixa de contratos", "Contract tier", "Rango de contratos"],
