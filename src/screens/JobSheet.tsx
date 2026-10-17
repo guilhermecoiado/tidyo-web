@@ -9,6 +9,7 @@ import { ChecklistView, PhotoStrip, Stars } from '../components/proof';
 import { getChecklist, getJobPhotos, type CheckItem, type Photo } from '../lib/photos';
 import { memberIndex, type Job, type Member } from '../lib/data';
 import { NewCharge } from './Invoices';
+import { translate, type Lang } from '../lib/i18n';
 
 export function recurrenceText(job: Job, t: (k: string, p?: Record<string, string | number>) => string) {
   if (job.contract_id) return t('job.recContract');
@@ -17,6 +18,30 @@ export function recurrenceText(job: Job, t: (k: string, p?: Record<string, strin
   if (/FREQ=WEEKLY/.test(r)) return n === 1 ? t('job.recWeekly') : t('job.recEveryN', { n });
   if (/FREQ=MONTHLY/.test(r)) return t('job.recMonthly');
   return t('job.recOnce');
+}
+
+/** One tap to remind the client of the visit, written in the client's language */
+function Remind({ job }: { job: Job }) {
+  const { t, company } = useApp();
+  const cl = job.clients!;
+  const L = (['pt-BR', 'en', 'es'].includes(cl.language || '') ? cl.language : 'en') as Lang;
+  const d = new Date(job.scheduled_start);
+  const day = d.toLocaleDateString(L, { weekday: 'long', month: 'short', day: 'numeric' });
+  const text = translate(L, 'rem.text', { name: cl.name.split(' ')[0], company: company?.name || '', day, time: hm(job.scheduled_start, L), address: job.properties?.address_line1 || '' });
+  const phone = (cl.phone || '').replace(/\D/g, '');
+  const ios = /iPad|iPhone|iPod/.test(navigator.userAgent);
+  const links: [string, string][] = [];
+  if (phone) links.push(['WhatsApp', `https://wa.me/${phone}?text=${encodeURIComponent(text)}`]);
+  if (phone) links.push(['SMS', `sms:${cl.phone}${ios ? '&' : '?'}body=${encodeURIComponent(text)}`]);
+  if (cl.email) links.push(['Email', `mailto:${cl.email}?subject=${encodeURIComponent(translate(L, 'rem.subject', { company: company?.name || '' }))}&body=${encodeURIComponent(text)}`]);
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+      <span className="k-lbl">{t('rem.title')}</span>
+      <div style={{ display: 'grid', gridTemplateColumns: `repeat(${links.length}, minmax(0, 1fr))`, gap: 8 }}>
+        {links.map(([label, href]) => <a key={label} className="k-btn k-btn-line nw" style={{ fontSize: 13 }} href={href} target={href.startsWith('http') ? '_blank' : undefined} rel="noreferrer">{label}</a>)}
+      </div>
+    </div>
+  );
 }
 
 export function JobSheet({ job, members, onClose, onChanged }: { job: Job; members: Member[]; onClose: () => void; onChanged: () => void }) {
@@ -102,6 +127,7 @@ export function JobSheet({ job, members, onClose, onChanged }: { job: Job; membe
       {photos.length > 0 && <PhotoStrip title={t('ck.photos')} photos={photos} />}
       {items && items.length > 0 && <details className="k-kv"><summary style={{ fontWeight: 800, cursor: 'pointer', minHeight: 28 }}>{t('ck.progress', { done: items.filter((i) => i.done_at).length, total: items.length })}</summary><ChecklistView items={items} editable={false} /></details>}
 
+      {job.status === 'scheduled' && new Date(job.scheduled_start).getTime() > Date.now() && (job.clients?.phone || job.clients?.email) && <Remind job={job} />}
       {helperId && helperId === membership?.id && (job.status === 'scheduled' || job.status === 'in_progress') && (
         <button className="k-btn k-btn-mint" onClick={() => nav(`/dia/servico/${job.id}`)}>{t('job.openMyChecklist')}</button>
       )}

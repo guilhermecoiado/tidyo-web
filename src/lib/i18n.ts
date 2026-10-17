@@ -1966,6 +1966,9 @@ const D: Dict = {
   'pro.teamPay': ["Exportar a folha da equipe e o relatório 1099.", "Export team payroll and the 1099 report.", "Exportar la nómina del equipo y el reporte 1099."],
   'pro.tidy': ["Mais {n} sugestões do Tidy na revisão completa.", "{n} more Tidy suggestions in the full review.", "{n} sugerencias más de Tidy en la revisión completa."],
   'pro.tidy.one': ["Mais 1 sugestão do Tidy na revisão completa.", "1 more Tidy suggestion in the full review.", "1 sugerencia más de Tidy en la revisión completa."],
+  'rem.title': ["Lembrar o cliente da visita", "Remind the client", "Recordar la visita al cliente"],
+  'rem.subject': ["Lembrete da sua limpeza · {company}", "Your cleaning reminder · {company}", "Recordatorio de tu limpieza · {company}"],
+  'rem.text': ["Oi, {name}! Aqui é da {company}. Passando para lembrar da sua limpeza de {day}, às {time}, em {address}. Se precisar mudar algo, é só responder esta mensagem.", "Hi {name}! This is {company}. Just a reminder of your cleaning on {day} at {time}, at {address}. If anything needs to change, just reply to this message.", "¡Hola, {name}! Te escribe {company}. Te recordamos tu limpieza del {day} a las {time}, en {address}. Si necesitas cambiar algo, responde este mensaje."],
 };
 
 const idx: Record<Lang, number> = { 'pt-BR': 0, en: 1, es: 2 };

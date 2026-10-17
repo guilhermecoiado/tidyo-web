@@ -9,7 +9,7 @@ export type Job = {
   rating_status: string; rating: number | null; rating_comment: string | null;
   contract_id: string | null; start_distance_m: number | null; start_inside_geofence: boolean | null;
   service_id?: string | null; started_at?: string | null; completed_at?: string | null;
-  clients: { name: string; kind?: 'residential' | 'commercial' } | null; properties: { address_line1: string; city: string; state?: string; lat?: number | null; lng?: number | null } | null;
+  clients: { name: string; kind?: 'residential' | 'commercial'; phone?: string | null; email?: string | null; language?: string | null } | null; properties: { address_line1: string; city: string; state?: string; lat?: number | null; lng?: number | null } | null;
   services?: { name: string } | null; recurrences?: { rrule: string } | null; job_assignments: { membership_id: string }[];
 };
 export type Invoice = {
@@ -17,7 +17,7 @@ export type Invoice = {
   client_id: string; clients: { name: string } | null;
 };
 
-const JOB_SELECT = 'id, client_id, property_id, status, scheduled_start, scheduled_end, price_cents, client_notes, internal_notes, completion_note, recurrence_id, rating_status, rating, rating_comment, contract_id, start_distance_m, start_inside_geofence, service_id, started_at, completed_at, clients(name, kind), properties(address_line1, city, state, lat, lng), services(name), recurrences(rrule), job_assignments(membership_id)';
+const JOB_SELECT = 'id, client_id, property_id, status, scheduled_start, scheduled_end, price_cents, client_notes, internal_notes, completion_note, recurrence_id, rating_status, rating, rating_comment, contract_id, start_distance_m, start_inside_geofence, service_id, started_at, completed_at, clients(name, kind, phone, email, language), properties(address_line1, city, state, lat, lng), services(name), recurrences(rrule), job_assignments(membership_id)';
 
 export async function getJobs(companyId: string, from: Date, to: Date) {
   const { data, error } = await supabase.from('jobs').select(JOB_SELECT)
