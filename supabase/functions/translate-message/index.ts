@@ -1,6 +1,6 @@
 // Translates a chat message into the languages of the other participants.
 // Free MyMemory by default; Google Cloud Translation if GOOGLE_SERVER_KEY is set.
-// Called by a database trigger with { id }; only fills translations that are still empty.
+// Called by a database trigger with { id } and the internal key; only fills translations that are still empty.
 import { createClient } from 'npm:@supabase/supabase-js@2.46.1';
 
 const db = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!, { auth: { persistSession: false } });
@@ -58,6 +58,9 @@ async function translateText(text: string, from: string, to: string): Promise<st
 
 Deno.serve(async (req) => {
   try {
+    // only the database trigger knows this key
+    const { data: realKey } = await db.rpc('internal_hook_key');
+    if (!realKey || req.headers.get('x-tidyo-key') !== realKey) return new Response('forbidden', { status: 403 });
     const { id } = await req.json();
     const { data: m } = await db.from('messages').select('id, conversation_id, sender_id, body, translations').eq('id', id).maybeSingle();
     if (!m || Object.keys(m.translations || {}).length) return new Response('skip');

@@ -127,7 +127,7 @@ function SettingsHome() {
           {isAdmin && <Row icon={IC.admin} label={t('ad.open')} to="/admin" />}
           <Row icon={IC.out} label={t('auth.signout')} onClick={() => setAskOut(true)} danger />
         </Group>
-        <p className="k-s12 k-muted" style={{ textAlign: 'center', margin: 0, display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'center' }}><ByYehi /><span>v1.0 · <Link to="/dia">{t('nav.myDay')}</Link></span></p>
+        <p className="k-s12 k-muted" style={{ textAlign: 'center', margin: 0, display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'center' }}><ByYehi /><span>v1.0</span></p>
       </main>
       <OwnerBar />
       {askOut && <Confirm text={`${t('auth.signout')}?`} confirmLabel={t('auth.signout')} onCancel={() => setAskOut(false)} onConfirm={async () => { await supabase.auth.signOut(); nav('/', { replace: true }); window.location.reload(); }} />}
@@ -575,7 +575,7 @@ function TeamPage() {
       <div style={{ background: C.bg, border: `1px solid ${C.line}`, borderRadius: 16, padding: 14, display: 'flex', flexDirection: 'column', gap: 10 }}>
         <span style={{ fontWeight: 800, fontSize: 14.5 }}>{t('team.inviteSomeone')}</span>
         <div className="k-chips">
-          {([['helper', t('team.helper')], ...(membership?.role === 'owner' ? [['manager', t('team.manager')]] : []), ['client', t('team.clientPortal')]] as [typeof role, string][]).map(([id, label]) => (
+          {([['helper', t('team.helper')], ...(membership?.role === 'owner' ? [['manager', t('team.manager')]] : [])] as [typeof role, string][]).map(([id, label]) => (
             <button key={id} className="k-chip" style={{ minHeight: 38 }} aria-pressed={role === id} onClick={() => { setRole(id); setCopied(false); }}>{label}</button>
           ))}
         </div>

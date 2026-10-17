@@ -1,12 +1,13 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { supabase } from '../lib/supabase';
 import { useApp } from '../lib/session';
-import { Field, Icon, Sheet, Wordmark } from '../components/ui';
+import { Field, Sheet, Wordmark } from '../components/ui';
+import { C, I, PILL, Svg } from '../components/kit';
 
 type Factor = { id: string; status: string; factor_type: string };
 
 // Two-step verification with an authenticator app (TOTP), plus data export and closing the business.
-export function SecuritySection() {
+export function SecuritySection({ admin = false }: { admin?: boolean }) {
   const { t, tErr, toast, company, membership } = useApp();
   const [factors, setFactors] = useState<Factor[]>([]);
   const [enroll, setEnroll] = useState<{ id: string; qr: string; secret: string } | null>(null);
@@ -55,36 +56,39 @@ export function SecuritySection() {
   return (
     <>
       <ChangePasswordCard />
-      <section className="card stack">
-        <div className="row"><Icon name="key" /><span className="bold grow">{t('sec.title')}</span>
-          <span className={`badge ${factors.length ? 'b-ok' : 'b-neutral'}`}>{factors.length ? t('sec.enabled') : t('sec.disabled')}</span></div>
-        <span className="small muted">{t('sec.hint')}</span>
-        {factors.length ? <button className="btn btn-secondary" onClick={disable}>{t('sec.turnOff')}</button>
-          : <button className="btn btn-secondary" onClick={start}>{t('sec.turnOn')}</button>}
+      <section className="k-card" style={{ gap: 10 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <Svg d={I.lock} size={18} color={C.accent} />
+          <b style={{ flex: 1, fontSize: 14.5 }}>{t('sec.title')}</b>
+          <span className="k-pill" style={{ background: factors.length ? PILL.ok[0] : PILL.neutral[0], color: factors.length ? PILL.ok[1] : PILL.neutral[1] }}>{factors.length ? t('sec.enabled') : t('sec.disabled')}</span>
+        </div>
+        <span className="k-s125 k-muted" style={{ lineHeight: 1.45 }}>{t('sec.hint')}</span>
+        {factors.length ? <button className="k-btn k-btn-line" onClick={disable}>{t('sec.turnOff')}</button>
+          : <button className="k-btn k-btn-line" style={{ color: C.accent }} onClick={start}>{t('sec.turnOn')}</button>}
       </section>
-      {membership?.role === 'owner' && (
-        <section className="card stack">
-          <span className="bold">{t('sec.data')}</span>
-          <button className="btn btn-secondary" onClick={exportData}><Icon name="receipt" size={18} />{t('sec.export')}</button>
-          <button className="btn btn-ghost" style={{ color: 'var(--danger-fg)' }} onClick={() => setClosing(true)}>{t('sec.close')}</button>
+      {!admin && membership?.role === 'owner' && (
+        <section className="k-card" style={{ gap: 10 }}>
+          <b style={{ fontSize: 14.5 }}>{t('sec.data')}</b>
+          <button className="k-btn k-btn-line" style={{ gap: 8 }} onClick={exportData}><Svg d={I.receipt} size={16} />{t('sec.export')}</button>
+          <button className="k-link" style={{ alignSelf: 'center', color: '#9F1F14' }} onClick={() => setClosing(true)}>{t('sec.close')}</button>
         </section>
       )}
       {enroll && (
         <Sheet title={t('sec.turnOn')} onClose={() => setEnroll(null)}>
-          <ol className="small" style={{ margin: 0, paddingLeft: 18 }}><li>{t('sec.step1')}</li><li>{t('sec.step2')}</li></ol>
+          <ol style={{ margin: 0, paddingLeft: 18, fontSize: 13.5, lineHeight: 1.5, color: C.muted }}><li>{t('sec.step1')}</li><li>{t('sec.step2')}</li></ol>
           <img src={enroll.qr} alt="QR" style={{ width: 200, height: 200, alignSelf: 'center', background: '#fff', borderRadius: 12 }} />
-          <span className="tiny muted" style={{ wordBreak: 'break-all', textAlign: 'center' }}>{enroll.secret}</span>
-          <form className="stack" onSubmit={verify}>
-            <Field label={t('sec.code')}><input className="input" inputMode="numeric" autoComplete="one-time-code" maxLength={6} value={code} onChange={(e) => setCode(e.target.value)} /></Field>
-            <button className="btn btn-primary" disabled={code.trim().length !== 6}>{t('c.confirm')}</button>
+          <span style={{ fontSize: 11.5, color: C.muted, wordBreak: 'break-all', textAlign: 'center' }}>{enroll.secret}</span>
+          <form style={{ display: 'flex', flexDirection: 'column', gap: 12 }} onSubmit={verify}>
+            <label className="k-field"><span>{t('sec.code')}</span><input className="k-input" inputMode="numeric" autoComplete="one-time-code" maxLength={6} value={code} onChange={(e) => setCode(e.target.value)} /></label>
+            <button className="k-btn k-btn-fill" disabled={code.trim().length !== 6}>{t('c.confirm')}</button>
           </form>
         </Sheet>
       )}
       {closing && (
         <Sheet title={t('sec.close')} onClose={() => setClosing(false)}>
-          <p style={{ margin: 0 }}>{t('sec.closeText')}</p>
-          <Field label={t('sec.typeLabel')}><input className="input" value={confirm} onChange={(e) => setConfirm(e.target.value)} autoCapitalize="characters" /></Field>
-          <button className="btn btn-danger" disabled={!confirm.trim()} onClick={close}>{t('sec.closeBtn')}</button>
+          <p style={{ margin: 0, fontSize: 14, lineHeight: 1.5 }}>{t('sec.closeText')}</p>
+          <label className="k-field"><span>{t('sec.typeLabel')}</span><input className="k-input" value={confirm} onChange={(e) => setConfirm(e.target.value)} autoCapitalize="characters" /></label>
+          <button className="k-btn k-btn-danger" disabled={!confirm.trim()} onClick={close}>{t('sec.closeBtn')}</button>
         </Sheet>
       )}
     </>
@@ -145,12 +149,12 @@ export function ChangePasswordSheet({ onClose }: { onClose: () => void }) {
   };
   return (
     <Sheet title={t('pw.title')} onClose={onClose}>
-      <form className="stack" onSubmit={save}>
-        <Field label={t('pw.current')}><input className="input" type="password" autoComplete="current-password" value={cur} onChange={(e) => setCur(e.target.value)} autoFocus /></Field>
-        <Field label={t('auth.newPassword')} hint={t('auth.passwordHint')}><input className="input" type="password" autoComplete="new-password" value={pw} onChange={(e) => setPw(e.target.value)} /></Field>
-        <Field label={t('pw.repeat')}><input className="input" type="password" autoComplete="new-password" value={pw2} onChange={(e) => setPw2(e.target.value)} /></Field>
-        {error && <p className="error-text" role="alert">{error}</p>}
-        <button className="btn btn-primary" disabled={busy || !cur || !pw}>{t('auth.savePassword')}</button>
+      <form style={{ display: 'flex', flexDirection: 'column', gap: 12 }} onSubmit={save}>
+        <label className="k-field"><span>{t('pw.current')}</span><input className="k-input" type="password" autoComplete="current-password" value={cur} onChange={(e) => setCur(e.target.value)} autoFocus /></label>
+        <label className="k-field"><span>{t('auth.newPassword')}</span><input className="k-input" type="password" autoComplete="new-password" value={pw} onChange={(e) => setPw(e.target.value)} /><span className="k-help">{t('auth.passwordHint')}</span></label>
+        <label className="k-field"><span>{t('pw.repeat')}</span><input className="k-input" type="password" autoComplete="new-password" value={pw2} onChange={(e) => setPw2(e.target.value)} /></label>
+        {error && <span role="alert" style={{ fontSize: 13, fontWeight: 700, color: '#B8400C' }}>{error}</span>}
+        <button className="k-btn k-btn-fill" disabled={busy || !cur || !pw}>{t('auth.savePassword')}</button>
       </form>
     </Sheet>
   );
@@ -160,10 +164,10 @@ function ChangePasswordCard() {
   const { t } = useApp();
   const [open, setOpen] = useState(false);
   return (
-    <section className="card stack">
-      <div className="row"><Icon name="key" /><span className="bold grow">{t('pw.title')}</span></div>
-      <span className="small muted">{t('pw.hint')}</span>
-      <button className="btn btn-secondary" onClick={() => setOpen(true)}>{t('pw.change')}</button>
+    <section className="k-card" style={{ gap: 10 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}><Svg d={I.lock} size={18} color={C.accent} /><b style={{ flex: 1, fontSize: 14.5 }}>{t('pw.title')}</b></div>
+      <span className="k-s125 k-muted">{t('pw.hint')}</span>
+      <button className="k-btn k-btn-line" style={{ color: C.accent }} onClick={() => setOpen(true)}>{t('pw.change')}</button>
       {open && <ChangePasswordSheet onClose={() => setOpen(false)} />}
     </section>
   );

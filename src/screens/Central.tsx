@@ -14,7 +14,7 @@ type Contact = { user_id: string; name: string; kind: string; language: Lang };
 type Cat = 'tidy' | 'equipe' | 'cliente' | 'tidyo';
 
 const CAT: Record<string, Cat> = {
-  tidy_daily: 'tidy', job_issue: 'equipe', expense_pending: 'equipe', job_completed: 'equipe', job_assigned: 'equipe', route_ready: 'equipe', join_request: 'equipe',
+  tidy_daily: 'tidy', job_issue: 'equipe', expense_pending: 'equipe', job_completed: 'equipe', job_assigned: 'equipe', route_ready: 'equipe', join_request: 'equipe', time_auto_closed: 'equipe',
   job_rated: 'cliente', message: 'cliente', client_request: 'cliente', broadcast: 'tidyo', support_reply: 'tidyo', join_approved: 'tidyo',
 };
 const ICON: Record<Cat, [string, string, string]> = { tidy: ['T', C.ink, '#5FD4C1'], equipe: ['EQ', '#DDF1EC', '#0B6B5F'], cliente: ['CL', '#E8E4F8', '#4B3BA8'], tidyo: ['t', C.accent, '#FFFFFF'] };
@@ -69,7 +69,8 @@ export default function Central() {
     switch (n.kind) {
       case 'job_issue': return { title: t('nt.job_issue', { who: s('who'), client: s('client') }), body: s('text') };
       case 'expense_pending': return { title: t('nt.expense_pending', { who: s('who'), amount: usd(Number(d.amount_cents || 0), true) }), body: d.category ? t(`expc.${s('category')}`) : '' };
-      case 'job_completed': return { title: t('nt.job_completed', { client: s('client') }), body: '' };
+      case 'job_completed': return { title: t('nt.job_completed', { client: s('client') }), body: d.price_cents ? t('nt.tapToBill', { v: usd(Number(d.price_cents), true) }) : '' };
+      case 'time_auto_closed': return { title: t('nt.time_auto_closed', { who: s('who') }), body: t('nt.time_auto_closedD') };
       case 'job_rated': return { title: t('nt.job_rated', { client: s('client'), n: s('rating') }), body: d.comment ? `“${s('comment')}”` : '' };
       case 'job_assigned': return { title: t('nt.job_assigned', { client: s('client'), when: d.start ? new Date(s('start')).toLocaleString(lang, { weekday: 'short', day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' }) : '' }), body: '' };
       case 'route_ready': return { title: t('ce.routeReady'), body: t('ce.routeReadyD', { n: s('stops'), date: d.date ? new Date(s('date') + 'T12:00').toLocaleDateString(lang, { weekday: 'long', day: 'numeric', month: 'long' }) : '' }) };

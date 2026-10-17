@@ -56,7 +56,6 @@ export default function Account() {
     if (error) toast(tErr(error.message)); else { await supabase.auth.signOut(); nav('/', { replace: true }); window.location.reload(); }
   };
   const links: [string, string, string, () => void][] = [
-    [t('acc.receipts'), t('acc.receiptsSub'), C.ink, () => setSheet('receipts')],
     [t('acc.download'), t('acc.downloadSub'), C.ink, () => company && exportCsvZip(company.id, company.name)],
     [t('acc.cancel'), t('acc.cancelSub'), '#8F2F08', () => setSheet('cancel')],
     [t('acc.delete'), t('acc.deleteSub'), '#8F2F08', () => setSheet('delete')],
@@ -74,7 +73,6 @@ export default function Account() {
           <span style={{ fontSize: 13, color: '#B9D6D0' }}>{sub?.cancel_at_period_end ? t('acc.endsOn', { d: endTxt }) : sub?.status === 'trialing' ? t('acc.trialUntil', { d: endTxt }) : t('acc.nextCharge', { d: endTxt })}</span>
           <div style={{ display: 'flex', gap: 8 }}>
             <button className="k-btn k-btn-mint" style={{ flex: 1, minHeight: 46, borderRadius: 13, fontSize: 13.5 }} onClick={() => { setPick(current); setSheet('plans'); }}>{t('acc.changePlan')}</button>
-            <button className="k-btn" style={{ flex: 1, minHeight: 46, borderRadius: 13, fontSize: 13.5, border: '1px solid #3B6A61', background: 'transparent', color: '#FFFFFF' }} onClick={() => setSheet('card')}>{t('acc.changeCard')}</button>
           </div>
         </div>
 

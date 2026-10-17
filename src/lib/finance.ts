@@ -44,3 +44,6 @@ export function healthOf(d: FinanceData): number | null {
   const col = d.billed > 0 ? Math.min(1, d.received / d.billed) : (d.received > 0 ? 1 : 0.5);
   return Math.round((m * 0.5 + od * 0.25 + col * 0.25) * 100);
 }
+
+/** The health score needs about a month of history; before that it would mostly be noise */
+export const healthReady = (createdAt?: string | null) => !createdAt || Date.now() - new Date(createdAt).getTime() >= 30 * 864e5;

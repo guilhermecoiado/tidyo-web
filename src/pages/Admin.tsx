@@ -466,7 +466,7 @@ function Config() {
   return (
     <>
       <Head title={t('sa.nav.settings')} sub={session?.user.email || ''} />
-      <div style={{ maxWidth: 560 }}><SecuritySection /></div>
+      <div style={{ maxWidth: 560 }}><SecuritySection admin /></div>
       <button className="k-btn k-btn-line" style={{ alignSelf: 'flex-start', color: '#9F1F14' }} onClick={async () => { await supabase.auth.signOut(); window.location.replace('/'); }}>{t('auth.signout')}</button>
     </>
   );

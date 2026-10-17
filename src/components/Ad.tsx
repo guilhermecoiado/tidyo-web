@@ -21,7 +21,8 @@ export function useAd() {
   const { lang, session, company, sub } = useApp();
   const [ad, setAd] = useState<AdRow | null>(null);
   useEffect(() => {
-    if (!session) return;
+    // sponsored content is only for accounts still on the free trial; paying customers and their team never see it
+    if (!session || sub?.status !== 'trialing') { setAd(null); return; }
     const now = new Date().toISOString();
     supabase.from('ad_campaigns').select('id, name, format, media_type, media_path, content, cta_url, utm, close_after_seconds, targeting, starts_at, ends_at')
       .eq('status', 'running').limit(20).then(({ data }) => {

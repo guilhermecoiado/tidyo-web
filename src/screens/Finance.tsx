@@ -8,6 +8,7 @@ import { DateField, Select } from '../components/pickers';
 import { C, OwnerBar, PILL, SheetActions, Svg, I, usd, useUnbilled } from '../components/kit';
 import { getClients, type Client } from '../lib/data';
 import { hoursBetween, isoDate } from '../lib/format';
+import { healthReady } from '../lib/finance';
 import { compressImage } from '../lib/photos';
 
 const EXP_CATS = ['supplies', 'gas', 'payroll', 'insurance', 'software', 'rent', 'marketing', 'equipment', 'mileage', 'parking', 'tolls', 'other'] as const;
@@ -127,7 +128,8 @@ export default function Finance() {
 
   const isCurrent = mo.y === now.getFullYear() && mo.m === now.getMonth();
   const monthName = new Date(mo.y, mo.m, 1).toLocaleDateString(lang, mo.y === now.getFullYear() ? { month: 'long' } : { month: 'long', year: 'numeric' });
-  const health = d ? healthScore(d) : null;
+  const young = !healthReady(company?.created_at);
+  const health = d && !young ? healthScore(d) : null;
   const profit = d ? d.billed - d.costs : 0;
   const margin = d && d.billed > 0 ? profit / d.billed : null;
   const delta = d && d.prevBilled > 0 ? Math.round(((d.billed - d.prevBilled) / d.prevBilled) * 100) : null;
@@ -138,8 +140,8 @@ export default function Finance() {
   const ledger = d ? [...d.payments.filter((p) => p.received_at.slice(0, 7) === `${mo.y}-${String(mo.m + 1).padStart(2, '0')}`).map((p) => ({ id: p.id, when: p.received_at, label: p.invoice_id ? `${p.invoices?.clients?.name || ''} · ${p.invoices?.number || ''}` : p.description || p.clients?.name || t('fin.income'), sub: t(`pay.${p.method}`), v: p.amount_cents })),
     ...d.monthExp.map((e) => ({ id: e.id, when: e.incurred_on + 'T12:00', label: e.description || t(`expc.${e.category}`), sub: `${t(`expc.${e.category}`)}${e.recurring ? ` · ${t('fin.monthly')}` : ''}`, v: -e.amount_cents }))]
     .sort((a, b) => b.when.localeCompare(a.when)).slice(0, 8) : [];
-  const healthTitle = health == null ? t('fin.hNone') : health >= 70 ? t('fin.hGood') : health >= 45 ? t('fin.hOk') : t('fin.hBad');
-  const healthText = !d ? '' : d.breakEven != null
+  const healthTitle = young ? t('fin.hSoon') : health == null ? t('fin.hNone') : health >= 70 ? t('fin.hGood') : health >= 45 ? t('fin.hOk') : t('fin.hBad');
+  const healthText = !d ? '' : young ? t('fin.hSoonText') : d.breakEven != null
     ? (d.doneN >= d.breakEven ? t('fin.beDone', { n: d.breakEven, k: d.doneN }) : t('fin.beLeft', { n: d.breakEven, k: d.doneN }))
     : t('fin.beSetup');
 

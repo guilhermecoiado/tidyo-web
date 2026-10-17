@@ -19,6 +19,9 @@ const T: Record<string, [string, string, string]> = {
   route_ready: ['Sua rota de {date} está pronta: {stops} paradas', 'Your route for {date} is ready: {stops} stops', 'Tu ruta del {date} está lista: {stops} paradas'],
   join_request: ['{who} pediu para entrar na equipe', '{who} asked to join the team', '{who} pidió unirse al equipo'],
   join_approved: ['Seu acesso à equipe foi aprovado', 'Your team access was approved', 'Tu acceso al equipo fue aprobado'],
+  time_auto_closed: ['O ponto de {who} ficou aberto e foi fechado após 14h. Revise as horas.', '{who}’s shift was left open and closed after 14h. Please review the hours.', 'El turno de {who} quedó abierto y se cerró a las 14h. Revisa las horas.'],
+  lead_new: ['Novo pedido de orçamento: {who}', 'New quote request: {who}', 'Nuevo pedido de presupuesto: {who}'],
+  proposal_accepted: ['{client} aceitou a proposta do contrato', '{client} accepted the contract proposal', '{client} aceptó la propuesta del contrato'],
   client_request: ['{client} fez um pedido: {text}', '{client} sent a request: {text}', '{client} hizo un pedido: {text}'],
 };
 const idx: Record<L, number> = { 'pt-BR': 0, en: 1, es: 2 };

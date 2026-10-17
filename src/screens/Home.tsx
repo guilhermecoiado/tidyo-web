@@ -7,7 +7,7 @@ import { Sheet } from '../components/ui';
 import { Avatar, BELL, C, Empty, Fab, I, LogoMark, OwnerBar, Pill, SheetActions, SPARK, Svg, colorOf, compactMoney, dur, hm, jobTone, shortName, usd } from '../components/kit';
 import { findConflicts, getClients, getInvoices, getJobs, getMembers, getServices, getUnbilled, isOverdue, jobMinutes, memberIndex, type Client, type Invoice, type Job, type Member } from '../lib/data';
 import { addDays, startOfDay } from '../lib/format';
-import { healthOf, loadFinance, marginOf } from '../lib/finance';
+import { healthOf, healthReady, loadFinance, marginOf } from '../lib/finance';
 import { optimize, total, driveMin, pt, type Pt } from '../lib/route';
 import { useUnread } from '../pages/Inbox';
 import { InlineAd, OverlayAd, useAd } from '../components/Ad';
@@ -152,7 +152,7 @@ function OwnerHome({ members, clients }: { members: Member[]; clients: Client[] 
       getJobs(company.id, today, addDays(today, 1)), getJobs(company.id, today, addDays(today, 8)), getInvoices(company.id),
       loadFinance(company.id, addDays(today, -30), addDays(today, 1)),
     ]);
-    setJobs(j.filter((x) => x.status !== 'canceled')); setWeek(w); setInvoices(inv); setHealth(healthOf(fin));
+    setJobs(j.filter((x) => x.status !== 'canceled')); setWeek(w); setInvoices(inv); setHealth(healthReady(company.created_at) ? healthOf(fin) : null);
     const [cts, exp, unbilled] = await Promise.all([
       company.mode !== 'residential' ? getContracts(company.id) : Promise.resolve([] as Contract[]),
       supabase.from('expenses').select('id', { count: 'exact', head: true }).eq('company_id', company.id).eq('status', 'pending'),
@@ -230,7 +230,7 @@ function OwnerHome({ members, clients }: { members: Member[]; clients: Client[] 
           <Link to="/app/financas" className="k-kpi" style={{ textDecoration: 'none', color: 'inherit' }}>
             <span className="k-kpi-l">{t('home.kHealth')}</span>
             <span className="k-kpi-v" style={{ color: health == null ? C.muted : health >= 70 ? C.accent : health >= 45 ? '#8A4B05' : '#B8400C' }}>{health == null ? '–' : <>{health}<span style={{ fontSize: 13, color: C.muted }}>/100</span></>}</span>
-            <div className="k-bar5"><div style={{ width: `${health || 0}%`, background: health == null || health >= 70 ? C.accent : health >= 45 ? '#E0A341' : '#B8400C' }} /></div>
+            {health == null && !healthReady(company?.created_at) ? <span className="k-kpi-n">{t('home.healthSoon')}</span> : <div className="k-bar5"><div style={{ width: `${health || 0}%`, background: health == null || health >= 70 ? C.accent : health >= 45 ? '#E0A341' : '#B8400C' }} /></div>}
           </Link>
         </div>
         <section style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -469,17 +469,20 @@ function FirstSteps({ members, clients, counts, trialEnds }: { members: Member[]
   const { t, company, profile } = useApp();
   const [manual, setManual] = useState<Record<string, boolean>>(() => { try { return JSON.parse(localStorage.getItem(STEP_KEY) || '{}'); } catch { return {}; } });
   const [tour, setTour] = useState(false);
-  const auto: Record<string, boolean> = { emp: !!manual.emp, cli: clients.length > 0, pre: counts.services > 0, eq: members.length > 1, ag: counts.jobs > 0 };
+  const payOk = Object.values((company?.payment_info || {}) as Record<string, string>).some(Boolean);
+  const auto: Record<string, boolean> = { emp: !!manual.emp, cli: clients.length > 0, pre: counts.services > 0, pay: payOk, eq: members.length > 1, ag: counts.jobs > 0 };
   const steps: [string, string, string, string, string][] = [
     ['emp', t('fs.emp'), t('fs.empH'), t('fs.empC'), '/app/mais'],
     ['cli', t('fs.cli'), t('fs.cliH'), t('fs.cliC'), '/app/clientes/novo'],
     ['pre', t('fs.pre'), t('fs.preH'), t('fs.preC'), '/app/mais/precos'],
+    ['pay', t('fs.pay'), t('fs.payH'), t('fs.payC'), '/app/mais/recebimento'],
     ['eq', t('fs.eq'), t('fs.eqH'), t('fs.eqC'), '/app/mais/equipe'],
     ['ag', t('fs.ag'), t('fs.agH'), t('fs.agC'), '/app/agenda/novo'],
   ];
   const isDone = (id: string) => manual[id] ?? auto[id];
   const toggle = (id: string) => { const n = { ...manual, [id]: !isDone(id) }; setManual(n); try { localStorage.setItem(STEP_KEY, JSON.stringify(n)); } catch { /* ignore */ } };
   const n = steps.filter(([id]) => isDone(id)).length;
+  const pct = Math.round((n / steps.length) * 100);
   const left = trialEnds ? Math.max(0, Math.ceil((new Date(trialEnds).getTime() - Date.now()) / 864e5)) : null;
   const first = (profile?.full_name || '').split(' ')[0];
   return (
@@ -499,9 +502,9 @@ function FirstSteps({ members, clients, counts, trialEnds }: { members: Member[]
               <span className="k-h2">{t('steps.title')}</span>
               <span className="k-s125 k-muted">{t('fs.progress', { n })}</span>
             </div>
-            <span className="num" style={{ fontFamily: "'Bricolage Grotesque', sans-serif", fontSize: 22, fontWeight: 700, color: C.accent }}>{n * 20}%</span>
+            <span className="num" style={{ fontFamily: "'Bricolage Grotesque', sans-serif", fontSize: 22, fontWeight: 700, color: C.accent }}>{pct}%</span>
           </div>
-          <div style={{ height: 8, borderRadius: 8, background: C.track, overflow: 'hidden' }}><div style={{ height: 8, width: `${n * 20}%`, background: C.accent, borderRadius: 8, transition: 'width .3s' }} /></div>
+          <div style={{ height: 8, borderRadius: 8, background: C.track, overflow: 'hidden' }}><div style={{ height: 8, width: `${pct}%`, background: C.accent, borderRadius: 8, transition: 'width .3s' }} /></div>
           <div style={{ display: 'flex', flexDirection: 'column' }}>
             {steps.map(([id, title, hint, cta, to], i) => {
               const d = isDone(id);

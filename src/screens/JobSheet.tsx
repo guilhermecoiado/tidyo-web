@@ -20,7 +20,7 @@ export function recurrenceText(job: Job, t: (k: string, p?: Record<string, strin
 }
 
 export function JobSheet({ job, members, onClose, onChanged }: { job: Job; members: Member[]; onClose: () => void; onChanged: () => void }) {
-  const { t, tErr, lang, company, toast } = useApp();
+  const { t, tErr, lang, company, toast, membership } = useApp();
   const nav = useNavigate();
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [items, setItems] = useState<CheckItem[] | null>(null);
@@ -102,6 +102,9 @@ export function JobSheet({ job, members, onClose, onChanged }: { job: Job; membe
       {photos.length > 0 && <PhotoStrip title={t('ck.photos')} photos={photos} />}
       {items && items.length > 0 && <details className="k-kv"><summary style={{ fontWeight: 800, cursor: 'pointer', minHeight: 28 }}>{t('ck.progress', { done: items.filter((i) => i.done_at).length, total: items.length })}</summary><ChecklistView items={items} editable={false} /></details>}
 
+      {helperId && helperId === membership?.id && (job.status === 'scheduled' || job.status === 'in_progress') && (
+        <button className="k-btn k-btn-mint" onClick={() => nav(`/dia/servico/${job.id}`)}>{t('job.openMyChecklist')}</button>
+      )}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 8 }}>
         <button className="k-btn k-btn-line" style={{ fontSize: 13 }} onClick={message} disabled={!helper?.user_id}>{t('job.message')}</button>
         <button className="k-btn k-btn-line" style={{ fontSize: 13 }} onClick={() => nav(`/app/agenda/novo?edit=${job.id}`)} disabled={job.status === 'completed' || job.status === 'canceled'}>{t('job.reschedule')}</button>
