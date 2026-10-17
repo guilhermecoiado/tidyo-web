@@ -1934,6 +1934,13 @@ const D: Dict = {
   'com.kMissing.one': ["1 falta", "1 missing", "1 falta"],
   'ce.sent.one': ["Aviso enviado para 1 pessoa.", "Notice sent to 1 person.", "Aviso enviado a 1 persona."],
   'fin.teamShort': ["Equipe", "Team", "Equipo"],
+  'ct.newShort': ["Novo", "New", "Nuevo"],
+  'ct.activeN': ["{n} contratos ativos", "{n} active contracts", "{n} contratos activos"],
+  'ct.activeN.one': ["1 contrato ativo", "1 active contract", "1 contrato activo"],
+  'ct.renewSoon': ["Renovações", "Renewals", "Renovaciones"],
+  'ct.next30': ["nos próximos 30 dias", "in the next 30 days", "en los próximos 30 días"],
+  'ct.emptyText': ["Contratos mensais de escritórios e comércios: valor fixo, horas combinadas e inspeções.", "Monthly contracts for offices and businesses: fixed value, agreed hours and inspections.", "Contratos mensuales de oficinas y comercios: valor fijo, horas acordadas e inspecciones."],
+  'ct.footHint': ["Toque num contrato para ver horas entregues, reajustar o valor ou fazer uma inspeção.", "Tap a contract to see delivered hours, adjust the value or run an inspection.", "Toca un contrato para ver horas entregadas, ajustar el valor o hacer una inspección."],
 };
 
 const idx: Record<Lang, number> = { 'pt-BR': 0, en: 1, es: 2 };

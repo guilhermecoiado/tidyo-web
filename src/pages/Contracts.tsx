@@ -2,7 +2,8 @@ import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { supabase } from '../lib/supabase';
 import { useApp } from '../lib/session';
 import { DateField, Select } from '../components/pickers';
-import { Field, Icon, LoadingList, OwnerNav, Segmented, Sheet } from '../components/ui';
+import { Field, Icon, Segmented, Sheet } from '../components/ui';
+import { C, Empty, Head, OwnerBar, PILL, Segment, display, usd } from '../components/kit';
 import { getClients, type Client } from '../lib/data';
 import { addDays, isoDate, money, toCents } from '../lib/format';
 
@@ -24,7 +25,7 @@ const daysUntil = (d: string | null) => (d ? Math.ceil((new Date(d + 'T12:00').g
 const monthsSince = (d: string | null) => (d ? Math.floor((Date.now() - new Date(d + 'T12:00').getTime()) / (30.44 * 864e5)) : null);
 
 export default function Contracts() {
-  const { t, lang, company } = useApp();
+  const { t, company } = useApp();
   const [list, setList] = useState<Contract[] | null>(null);
   const [clients, setClients] = useState<Client[]>([]);
   const [tab, setTab] = useState<'active' | 'proposal' | 'all'>('active');
@@ -33,41 +34,63 @@ export default function Contracts() {
   const load = useCallback(async () => { if (company) setList(await getContracts(company.id)); }, [company]);
   useEffect(() => { load(); if (company) getClients(company.id).then((c) => setClients(c.filter((x) => x.kind === 'commercial'))); }, [load, company]);
   const shown = (list || []).filter((c) => tab === 'all' || c.status === tab);
-  const mrr = (list || []).filter((c) => c.status === 'active').reduce((s, c) => s + c.monthly_value_cents, 0);
+  const active = (list || []).filter((c) => c.status === 'active');
+  const mrr = active.reduce((s, c) => s + c.monthly_value_cents, 0);
+  const renewSoon = active.filter((c) => { const d = daysUntil(c.renews_on); return d !== null && d <= 30; }).length;
+  const proposals = (list || []).filter((c) => c.status === 'proposal').length;
 
   return (
-    <div className="shell">
-      <main className="page">
-        <div className="topbar"><h1 className="grow">{t('ct.title')}</h1>
-          <button className="btn btn-primary" style={{ minHeight: 44 }} onClick={() => setCreate(true)}><Icon name="plus" size={18} />{t('ct.new')}</button></div>
-        <div className="grid2">
-          <div className="kpi"><div className="label">{t('ct.mrr')}</div><div className="value num">{money(mrr, lang)}</div></div>
-          <div className="kpi"><div className="label">{t('ct.active')}</div><div className="value num">{(list || []).filter((c) => c.status === 'active').length}</div></div>
+    <div className="k-screen">
+      <main className="k-page" style={{ gap: 14 }}>
+        <Head title={t('ct.title')} back="/app/clientes" right={<button className="k-btn k-btn-fill nw" style={{ minHeight: 44, borderRadius: 13, fontSize: 13.5, padding: '0 14px' }} onClick={() => setCreate(true)}>+ {t('ct.newShort')}</button>} />
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 10 }}>
+          <div className="k-card" style={{ gap: 4, padding: 14 }}>
+            <span style={{ fontSize: 11, fontWeight: 800, color: C.muted, textTransform: 'uppercase', letterSpacing: 0.3 }}>{t('ct.mrr')}</span>
+            <b className="num" style={{ ...display, fontSize: 24, lineHeight: 1.1 }}>{usd(mrr)}</b>
+            <span style={{ fontSize: 12, color: C.muted }}>{t('ct.activeN', { n: active.length })}</span>
+          </div>
+          <div className="k-card" style={{ gap: 4, padding: 14 }}>
+            <span style={{ fontSize: 11, fontWeight: 800, color: C.muted, textTransform: 'uppercase', letterSpacing: 0.3 }}>{t('ct.renewSoon')}</span>
+            <b className="num" style={{ ...display, fontSize: 24, lineHeight: 1.1, color: renewSoon ? '#B23A1E' : C.ink }}>{renewSoon}</b>
+            <span style={{ fontSize: 12, color: C.muted }}>{t('ct.next30')}</span>
+          </div>
         </div>
-        <Segmented value={tab} onChange={setTab} label={t('ct.title')} options={[{ value: 'active', label: t('ct.st.active') }, { value: 'proposal', label: t('ct.st.proposal') }, { value: 'all', label: t('inv.all') }]} />
-        {!list ? <LoadingList /> : shown.length === 0 ? <div className="empty">{t('ct.empty')}</div> : (
-          <div className="list">
-            {shown.map((c) => {
+        <Segment value={tab} onChange={setTab} label={t('ct.title')} options={[{ value: 'active', label: t('ct.st.active') }, { value: 'proposal', label: <>{t('ct.st.proposal')}{proposals > 0 && <span className="k-segbadge">{proposals}</span>}</> }, { value: 'all', label: t('inv.all') }]} />
+        {!list ? <div className="k-card">{[0, 1].map((i) => <div key={i} className="skeleton" style={{ height: 56 }} />)}</div> : shown.length === 0 ? (
+          <Empty title={t('ct.empty')} text={t('ct.emptyText')} action={<button className="k-btn k-btn-fill" style={{ marginTop: 8 }} onClick={() => setCreate(true)}>+ {t('ct.new')}</button>} />
+        ) : (
+          <div className="k-card" style={{ padding: '2px 14px', gap: 0 }}>
+            {shown.map((c, i) => {
               const d = daysUntil(c.renews_on);
               const m = monthsSince(c.last_adjusted_on || c.starts_on);
+              const [bg, fg] = c.status === 'active' ? PILL.ok : c.status === 'proposal' ? PILL.neutral : PILL.warn;
               return (
-                <button key={c.id} className="item" onClick={() => setOpen(c)}>
-                  <span className="body">
-                    <span className="title">{c.clients?.name}</span>
-                    <span className="small muted">{money(c.monthly_value_cents, lang)}/{t('ct.mo')}{c.hours_per_week ? ` · ${c.hours_per_week}h/${t('ct.wk')}` : ''}</span>
+                <button key={c.id} onClick={() => setOpen(c)} style={{ all: 'unset', cursor: 'pointer', display: 'flex', flexDirection: 'column', gap: 6, padding: '14px 0', borderTop: i ? `1px solid ${C.soft}` : 0 }}>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <span style={{ display: 'flex', flexDirection: 'column', flex: 1, minWidth: 0 }}>
+                      <b className="k-ell" style={{ fontSize: 14.5 }}>{c.clients?.name}</b>
+                      <span className="k-ell" style={{ fontSize: 12, color: C.muted }}>{c.properties ? `${c.properties.address_line1}, ${c.properties.city}` : ''}</span>
+                    </span>
+                    <span style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
+                      <b className="num nw" style={{ fontSize: 14.5 }}>{usd(c.monthly_value_cents)}<span style={{ fontSize: 11.5, color: C.muted, fontWeight: 600 }}>/{t('ct.mo')}</span></b>
+                      <span className="k-pill nw" style={{ fontSize: 11, padding: '2px 8px', background: bg, color: fg }}>{t(`ct.st.${c.status}`)}</span>
+                    </span>
                   </span>
-                  <span className="stack" style={{ gap: 4, alignItems: 'flex-end' }}>
-                    <span className={`badge ${c.status === 'active' ? 'b-ok' : c.status === 'proposal' ? 'b-neutral' : 'b-warn'}`}>{t(`ct.st.${c.status}`)}</span>
-                    {d !== null && d <= 30 && c.status === 'active' && <span className="badge b-danger">{t('ct.renewsIn', { n: Math.max(0, d) })}</span>}
-                    {m !== null && m >= 12 && c.status === 'active' && <span className="badge b-warn">{t('ct.noAdjust', { n: m })}</span>}
-                  </span>
+                  {c.status === 'active' && ((d !== null && d <= 30) || (m !== null && m >= 12) || c.hours_per_week) && (
+                    <span style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                      {c.hours_per_week ? <span className="k-pill nw" style={{ fontSize: 11, padding: '2px 8px', background: PILL.neutral[0], color: PILL.neutral[1] }}>{c.hours_per_week}h/{t('ct.wk')}</span> : null}
+                      {d !== null && d <= 30 && <span className="k-pill nw" style={{ fontSize: 11, padding: '2px 8px', background: PILL.danger[0], color: PILL.danger[1] }}>{t('ct.renewsIn', { n: Math.max(0, d) })}</span>}
+                      {m !== null && m >= 12 && <span className="k-pill nw" style={{ fontSize: 11, padding: '2px 8px', background: PILL.warn[0], color: PILL.warn[1] }}>{t('ct.noAdjust', { n: m })}</span>}
+                    </span>
+                  )}
                 </button>
               );
             })}
           </div>
         )}
+        <span style={{ fontSize: 12, color: C.muted, lineHeight: 1.45 }}>{t('ct.footHint')}</span>
       </main>
-      <OwnerNav />
+      <OwnerBar />
       {create && <ContractForm clients={clients} onClose={() => setCreate(false)} onSaved={() => { setCreate(false); load(); }} />}
       {open && <ContractDetail contract={open} onClose={() => setOpen(null)} onChanged={() => { setOpen(null); load(); }} />}
     </div>
@@ -116,7 +139,7 @@ function ContractForm({ clients, onClose, onSaved }: { clients: Client[]; onClos
         </div>
         <Field label={t('ct.radius')} hint={t('ct.radiusHint')}><input className="input" inputMode="numeric" value={radius} onChange={(e) => setRadius(e.target.value)} /></Field>
         {error && <p className="error-text" role="alert">{error}</p>}
-        <button className="btn btn-primary btn-block" disabled={busy || toCents(value) <= 0}>{t('c.save')}</button>
+        <button className="k-btn k-btn-fill" style={{ width: '100%' }} disabled={busy || toCents(value) <= 0}>{t('c.save')}</button>
       </form>
     </Sheet>
   );
@@ -157,11 +180,11 @@ function ContractDetail({ contract, onClose, onChanged }: { contract: Contract; 
     <Sheet title={contract.clients?.name || t('ct.title')} onClose={onClose}>
       <div className="row small muted"><Icon name="pin" size={16} />{contract.properties?.address_line1}, {contract.properties?.city}</div>
       <div className="grid2">
-        <div className="kpi"><div className="label">{t('ct.value')}</div><div className="value num">{money(contract.monthly_value_cents, lang)}</div></div>
-        <div className="kpi"><div className="label">{t('ct.renews')}</div><div className="bold" style={{ marginTop: 4 }}>{contract.renews_on ? new Date(contract.renews_on + 'T12:00').toLocaleDateString(lang, { day: 'numeric', month: 'short', year: 'numeric' }) : '—'}</div></div>
+        <div className="k-card" style={{ gap: 4, padding: 14 }}><span style={{ fontSize: 11, fontWeight: 800, color: C.muted, textTransform: 'uppercase' }}>{t('ct.value')}</span><b className="num" style={{ ...display, fontSize: 22 }}>{usd(contract.monthly_value_cents)}</b></div>
+        <div className="k-card" style={{ gap: 4, padding: 14 }}><span style={{ fontSize: 11, fontWeight: 800, color: C.muted, textTransform: 'uppercase' }}>{t('ct.renews')}</span><div style={{ fontWeight: 800, fontSize: 15, marginTop: 4 }}>{contract.renews_on ? new Date(contract.renews_on + 'T12:00').toLocaleDateString(lang, { day: 'numeric', month: 'short', year: 'numeric' }) : '—'}</div></div>
       </div>
-      <section className="card stack" style={{ gap: 6 }}>
-        <span className="label">{t('ct.hoursVs')}</span>
+      <section className="k-card" style={{ gap: 6 }}>
+        <span style={{ fontSize: 11, fontWeight: 800, color: C.muted, textTransform: 'uppercase' }}>{t('ct.hoursVs')}</span>
         {delivered === null ? <div className="skeleton" style={{ height: 24 }} /> : (
           <>
             <div className="row"><span className="grow bold num">{delivered.toFixed(1)}h</span><span className="muted small">{expected ? `${t('ct.contracted')}: ${expected}h` : t('ct.noHours')}</span></div>
@@ -171,20 +194,20 @@ function ContractDetail({ contract, onClose, onChanged }: { contract: Contract; 
         )}
         {outside > 0 && <span className="small" style={{ color: 'var(--danger-fg)' }}>{t('ct.outside', { n: outside })}</span>}
       </section>
-      <div className="row wrap">
-        <button className="btn btn-secondary" onClick={() => setAdjust(true)}>{t('ct.adjust')}</button>
-        {contract.status === 'proposal' && <button className="btn btn-primary" style={{ minHeight: 44 }} onClick={() => setStatus('active')}>{t('ct.activate')}</button>}
-        {contract.status === 'active' && <button className="btn btn-ghost" onClick={() => setStatus('paused')}>{t('ct.pause')}</button>}
-        {contract.status === 'paused' && <button className="btn btn-primary" style={{ minHeight: 44 }} onClick={() => setStatus('active')}>{t('ct.activate')}</button>}
+      <div className="k-pair">
+        <button className="k-btn k-btn-line" onClick={() => setAdjust(true)}>{t('ct.adjust')}</button>
+        {contract.status === 'proposal' && <button className="k-btn k-btn-fill" onClick={() => setStatus('active')}>{t('ct.activate')}</button>}
+        {contract.status === 'active' && <button className="k-btn k-btn-line" onClick={() => setStatus('paused')}>{t('ct.pause')}</button>}
+        {contract.status === 'paused' && <button className="k-btn k-btn-fill" onClick={() => setStatus('active')}>{t('ct.activate')}</button>}
       </div>
       {adjust && (
         <div className="card stack">
           <Field label={t('ct.newValue')}><input className="input" inputMode="decimal" value={newValue} onChange={(e) => setNewValue(e.target.value)} /></Field>
-          <button className="btn btn-primary" onClick={saveAdjust}>{t('c.save')}</button>
+          <button className="k-btn k-btn-fill" onClick={saveAdjust}>{t('c.save')}</button>
         </div>
       )}
       <section className="stack">
-        <div className="row"><h3 className="grow">{t('ins.title')}</h3><button className="btn btn-ghost" onClick={() => setNewInsp(true)}><Icon name="plus" size={18} />{t('ins.new')}</button></div>
+        <div className="row"><h3 className="grow">{t('ins.title')}</h3><button className="k-btn k-btn-line" onClick={() => setNewInsp(true)}><Icon name="plus" size={18} />{t('ins.new')}</button></div>
         {insp.length === 0 ? <span className="small muted">{t('ins.none')}</span> : insp.map((i) => (
           <div key={i.id} className="card tight row">
             <span className="grow small">{new Date(i.inspected_at).toLocaleDateString(lang, { day: 'numeric', month: 'short' })} · {i.items.filter((x) => !x.ok).length ? t('ins.issues', { n: i.items.filter((x) => !x.ok).length }) : t('ins.allOk')}</span>
@@ -223,7 +246,7 @@ function InspectionForm({ contractId, companyId, inspectorId, onClose, onSaved }
         </div>
       ))}
       <label className="check"><input type="checkbox" checked={share} onChange={(e) => setShare(e.target.checked)} />{t('ins.shareClient')}</label>
-      <button className="btn btn-primary" onClick={save}>{t('c.save')}</button>
+      <button className="k-btn k-btn-fill" onClick={save}>{t('c.save')}</button>
     </Sheet>
   );
 }
