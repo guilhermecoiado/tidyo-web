@@ -29,11 +29,15 @@ import { PortalInvite } from './pages/Portal';
 import JoinTeam, { PendingJoin } from './pages/JoinTeam';
 import Legal from './pages/Legal';
 import Portal from './screens/Portal';
+import Locked from './screens/Locked';
 
 function Gate({ need, children }: { need: 'staff' | 'member' | 'portal' | 'any' | 'admin'; children: ReactNode }) {
-  const { ready, session, membership, isStaff, portal, isAdmin } = useApp();
+  const { ready, session, membership, isStaff, portal, isAdmin, access } = useApp();
   const loc = useLocation();
   if (!ready) return <FullLoader />;
+  // trial over / paused / canceled: only the account, data export and support stay open
+  const lockedOk = ['/app/conta', '/app/mais/seguranca'].includes(loc.pathname);
+  if (session && membership && access !== 'ok' && (need === 'staff' || need === 'member') && !lockedOk) return <Locked />;
   if (!session) return <Navigate to="/entrar" replace state={{ from: loc.pathname }} />;
   if (need === 'any') return <>{children}</>;
   if (need === 'admin') return isAdmin ? <>{children}</> : <Navigate to="/" replace />;

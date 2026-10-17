@@ -22,6 +22,7 @@ type Ctx = {
   membership: Membership | null;
   company: Company | null;
   sub: Subscription | null;
+  access: 'ok' | 'trial_over' | 'paused' | 'canceled';
   portal: PortalClient | null;
   /** asked to join a team through a link and waiting for the owner */
   pendingJoin: { company_name: string; role: string } | null;
@@ -50,6 +51,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const [membership, setMembership] = useState<Membership | null>(null);
   const [company, setCompany] = useState<Company | null>(null);
   const [sub, setSub] = useState<Subscription | null>(null);
+  const [access, setAccess] = useState<'ok' | 'trial_over' | 'paused' | 'canceled'>('ok');
   const [portal, setPortal] = useState<PortalClient | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [pendingJoin, setPendingJoin] = useState<Ctx['pendingJoin']>(null);
@@ -61,7 +63,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
   const load = useCallback(async (s: Session | null) => {
     setSession(s);
-    if (!s) { setPendingJoin(null); setProfile(null); setMembership(null); setCompany(null); setSub(null); setPortal(null); setIsAdmin(false); setReady(true); return; }
+    if (!s) { setPendingJoin(null); setProfile(null); setMembership(null); setCompany(null); setSub(null); setAccess('ok'); setPortal(null); setIsAdmin(false); setReady(true); return; }
     const [{ data: p }, { data: ms }] = await Promise.all([
       supabase.from('profiles').select('id, full_name, language').eq('id', s.user.id).maybeSingle(),
       supabase.from('memberships').select('id, company_id, role, status, display_name, language, gender').eq('user_id', s.user.id).eq('status', 'active'),
@@ -75,10 +77,12 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     const m = list.find((x) => x.role !== 'helper') || list[0] || null;
     setMembership(m);
     if (m) {
-      const [{ data: c }, { data: sb }] = await Promise.all([
+      const [{ data: c }, { data: sb }, { data: acc }] = await Promise.all([
         supabase.from('companies').select('id, name, mode, solo, allow_push_team, allow_push_clients, default_language, timezone, address, state, logo_path, is_demo_data, pricing, auto_messages, cancellation_fee_cents, cancellation_window_hours, payment_info, lat, lng, created_at').eq('id', m.company_id).maybeSingle(),
         supabase.from('subscriptions').select('plan, status, trial_ends_at, has_commercial, commercial_tier, interval, cancel_at_period_end, current_period_end').eq('company_id', m.company_id).maybeSingle(),
+        supabase.rpc('company_access_state', { p_company: m.company_id }),
       ]);
+      setAccess((['trial_over', 'paused', 'canceled'].includes(acc as string) ? acc : 'ok') as 'ok' | 'trial_over' | 'paused' | 'canceled');
       setCompany(c as Company | null);
       setSub(sb as Subscription | null);
       setPortal(null); setPendingJoin(null);
@@ -135,10 +139,10 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const value = useMemo<Ctx>(() => ({
-    ready, session, profile, membership, company, sub, portal, pendingJoin, isAdmin, needsMfa, lang,
+    ready, session, profile, membership, company, sub, access, portal, pendingJoin, isAdmin, needsMfa, lang,
     isStaff: membership?.role === 'owner' || membership?.role === 'manager',
     setLang, t, tg, ownerG, tErr, refresh: async () => { const { data } = await supabase.auth.getSession(); await load(data.session); }, toast,
-  }), [ready, session, profile, membership, company, sub, portal, pendingJoin, isAdmin, needsMfa, lang, setLang, t, tErr, load, toast, tg, ownerG]);
+  }), [ready, session, profile, membership, company, sub, access, portal, pendingJoin, isAdmin, needsMfa, lang, setLang, t, tErr, load, toast, tg, ownerG]);
 
   return (
     <SessionCtx.Provider value={value}>

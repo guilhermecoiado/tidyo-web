@@ -130,6 +130,20 @@ export function HomeSkeleton() {
   );
 }
 
+/** Last 3 days of the trial: a quiet note so the lock screen never comes as a surprise */
+function TrialSoon() {
+  const { t, sub, membership } = useApp();
+  if (membership?.role !== 'owner' || sub?.status !== 'trialing' || !sub.trial_ends_at) return null;
+  const left = Math.ceil((new Date(sub.trial_ends_at).getTime() - Date.now()) / 864e5);
+  if (left > 3 || left < 0) return null;
+  return (
+    <Link to="/ajuda" className="k-card" style={{ flexDirection: 'row', alignItems: 'center', gap: 10, padding: '10px 14px', background: '#FFF8E6', borderColor: '#F3DFA8', textDecoration: 'none', color: '#6B4A04' }}>
+      <span style={{ flex: 1, fontSize: 13, fontWeight: 700, lineHeight: 1.4 }}>{left <= 0 ? t('home.trialToday') : t('home.trialSoon', { n: left })}</span>
+      <span className="nw" style={{ fontSize: 13, fontWeight: 800, color: '#0B6B5F' }}>{t('home.trialTalk')}</span>
+    </Link>
+  );
+}
+
 // ─────────────── Residencial / ambos ───────────────
 function OwnerHome({ members, clients }: { members: Member[]; clients: Client[] }) {
   const { t, tErr, lang, company, profile, toast } = useApp();
@@ -217,6 +231,7 @@ function OwnerHome({ members, clients }: { members: Member[]; clients: Client[] 
         <TopBar sub={dateLine(lang)} name={`${greeting(t)}${first ? `, ${first}` : ''}`} pending={pending} onTidy={() => setTidy(true)} />
         {ad && (ad.format === 'top_banner' || ad.format === 'cta_card') && <InlineAd ad={ad} close={closeAd} click={clickAd} />}
         <InstallCard />
+        <TrialSoon />
         {conflict && (
           <div className="k-urgent" role="status">
             <Svg d={SPARK} size={18} color="#B8400C" />
@@ -389,6 +404,7 @@ function CommercialHome({ members, reloadBase }: { members: Member[]; reloadBase
       <main className="k-page top20" style={{ gap: 16 }}>
         <TopBar sub={`${dateLine(lang)}${shiftWord ? ` · ${shiftWord}` : ''}`} name={`${greeting(t)}${first ? `, ${first}` : ''}`} pending={insights.length} onTidy={() => setTidy(true)} />
         <InstallCard />
+        <TrialSoon />
         {missing[0] && !covered && (
           <div className="k-urgent" role="status">
             <Svg d={I.alert} size={18} color="#B8400C" />
@@ -496,6 +512,7 @@ function FirstSteps({ members, clients, counts, trialEnds }: { members: Member[]
           </div>
         </div>
         <InstallCard />
+        <TrialSoon />
         <div className="k-card r20" style={{ gap: 12 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 2, flex: 1 }}>

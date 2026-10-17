@@ -1941,6 +1941,23 @@ const D: Dict = {
   'ct.next30': ["nos próximos 30 dias", "in the next 30 days", "en los próximos 30 días"],
   'ct.emptyText': ["Contratos mensais de escritórios e comércios: valor fixo, horas combinadas e inspeções.", "Monthly contracts for offices and businesses: fixed value, agreed hours and inspections.", "Contratos mensuales de oficinas y comercios: valor fijo, horas acordadas e inspecciones."],
   'ct.footHint': ["Toque num contrato para ver horas entregues, reajustar o valor ou fazer uma inspeção.", "Tap a contract to see delivered hours, adjust the value or run an inspection.", "Toca un contrato para ver horas entregadas, ajustar el valor o hacer una inspección."],
+  'lock.trial_over': ["Seu teste grátis terminou", "Your free trial has ended", "Tu prueba gratis terminó"],
+  'lock.paused': ["Sua conta está pausada", "Your account is paused", "Tu cuenta está en pausa"],
+  'lock.canceled': ["Sua assinatura foi encerrada", "Your subscription has ended", "Tu suscripción terminó"],
+  'lock.ownerText': ["Para continuar usando o Tidyo, fale com a gente e ativamos o seu plano na hora.", "To keep using Tidyo, talk to us and we'll activate your plan right away.", "Para seguir usando Tidyo, habla con nosotros y activamos tu plan al momento."],
+  'lock.staffText': ["Fale com quem é responsável pela conta ou com o suporte do Tidyo para reativar.", "Ask the account owner or Tidyo support to reactivate it.", "Habla con quien administra la cuenta o con el soporte de Tidyo para reactivarla."],
+  'lock.helperTitle': ["Acesso pausado", "Access paused", "Acceso en pausa"],
+  'lock.helperText': ["A conta da {company} está pausada no momento. Fale com {owner} para voltar a ver seus serviços.", "{company}'s account is paused right now. Talk to {owner} to see your jobs again.", "La cuenta de {company} está en pausa. Habla con {owner} para volver a ver tus servicios."],
+  'lock.theOwner': ["a responsável", "the owner", "la responsable"],
+  'lock.safeTitle': ["Seus dados estão guardados", "Your data is safe", "Tus datos están guardados"],
+  'lock.safeText': ["Clientes, agenda, faturas e histórico continuam salvos. Tudo volta como estava assim que a conta for reativada.", "Clients, schedule, invoices and history stay saved. Everything comes back as it was once the account is active again.", "Clientes, agenda, facturas e historial siguen guardados. Todo vuelve como estaba cuando se reactive la cuenta."],
+  'lock.talk': ["Falar com o suporte", "Talk to support", "Hablar con soporte"],
+  'lock.plans': ["Ver meu plano", "See my plan", "Ver mi plan"],
+  'lock.export': ["Baixar uma cópia dos meus dados", "Download a copy of my data", "Descargar una copia de mis datos"],
+  'home.trialSoon': ["Seu teste grátis acaba em {n} dias.", "Your free trial ends in {n} days.", "Tu prueba gratis termina en {n} días."],
+  'home.trialSoon.one': ["Seu teste grátis acaba amanhã.", "Your free trial ends tomorrow.", "Tu prueba gratis termina mañana."],
+  'home.trialToday': ["Seu teste grátis acaba hoje.", "Your free trial ends today.", "Tu prueba gratis termina hoy."],
+  'home.trialTalk': ["Ativar plano", "Activate plan", "Activar plan"],
 };
 
 const idx: Record<Lang, number> = { 'pt-BR': 0, en: 1, es: 2 };
