@@ -569,7 +569,7 @@ function TeamPage() {
   const { t, tg, tErr, company, membership, toast } = useApp();
   const [members, setMembers] = useState<Member[] | null>(null);
   const [requests, setRequests] = useState<Member[]>([]);
-  const [role, setRole] = useState<'helper' | 'manager' | 'client'>('helper');
+  const [role, setRole] = useState<'helper' | 'manager'>('helper');
   const [link, setLink] = useState<Record<string, string>>({});
   const [copied, setCopied] = useState(false);
   const [sel, setSel] = useState<Member | null>(null);
@@ -581,7 +581,7 @@ function TeamPage() {
   }, [company]);
   useEffect(() => { load(); }, [load]);
   useEffect(() => {
-    if (!company || role === 'client' || link[role]) return;
+    if (!company || link[role]) return;
     supabase.rpc('create_team_link', { p_company: company.id, p_role: role }).then(({ data, error }) => {
       if (error) toast(tErr(error.message)); else setLink((l) => ({ ...l, [role]: `${window.location.origin}/equipe?t=${data}` }));
     });
@@ -630,14 +630,14 @@ function TeamPage() {
           ))}
         </div>
         <span className="k-s125 k-muted" style={{ lineHeight: 1.45 }}>{t(`team.hint.${role}`)}</span>
-        {role === 'client' ? <Link to="/app/clientes" className="k-btn k-btn-line">{t('team.toClients')}</Link> : <>
+        <>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#FFFFFF', border: `1px solid ${C.line}`, borderRadius: 12, padding: '4px 4px 4px 12px' }}>
             <code className="k-ell" style={{ fontFamily: 'Manrope, sans-serif', fontSize: 13, fontWeight: 700, flex: 1, userSelect: 'all' }}>{cur ? cur.replace(/^https?:\/\//, '') : '…'}</code>
             <button className="k-btn k-btn-fill" style={{ minHeight: 40, borderRadius: 10, fontSize: 12.5, padding: '0 12px' }} disabled={!cur} onClick={async () => { try { await navigator.clipboard.writeText(cur); setCopied(true); } catch { /* ignore */ } }}>{copied ? t('c.copied') : t('c.copy')}</button>
           </div>
           {cur && <a className="k-btn k-btn-line" href={`https://wa.me/?text=${encodeURIComponent(waText)}`} target="_blank" rel="noreferrer">{t('team.whatsapp')}</a>}
           <span className="k-s12 k-muted">{t('team.linkNote')}</span>
-        </>}
+        </>
       </div>
       {sel && <MemberSheet m={sel} members={members || []} onClose={() => setSel(null)} onChanged={() => { setSel(null); load(); }} />}
     </>

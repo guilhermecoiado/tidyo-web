@@ -128,7 +128,11 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   useEffect(() => { document.documentElement.lang = lang; }, [lang]);
 
   const t = useCallback((key: string, params?: Record<string, string | number>) => translate(lang, key, params), [lang]);
-  const tErr = useCallback((message?: string | null) => { const e = errorKey(message); return translate(lang, e.key, e.params); }, [lang]);
+  const tErr = useCallback((message?: string | null) => {
+    // the account got locked while the app was open (trial ended, paused): reload so the lock screen shows
+    if (message && /account_locked/.test(message)) window.setTimeout(() => { supabase.auth.getSession().then(({ data }) => load(data.session)); }, 1200);
+    const e = errorKey(message); return translate(lang, e.key, e.params);
+  }, [lang, load]);
 
   const tg = useCallback((key: string, g?: Gender, params?: Record<string, string | number>) => translate(lang, gKey(key, g ?? ownerG), params), [lang, ownerG]);
 

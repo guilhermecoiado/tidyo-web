@@ -1193,8 +1193,6 @@ const D: Dict = {
   'team.clientPortal': ["Cliente (portal)", "Client (portal)", "Cliente (portal)"],
   'team.hint.helper': ["Vê só os próprios jobs do dia, checklist, ponto e chat. Nunca vê valores.", "Sees only their own jobs, checklist, time clock and chat. Never sees prices.", "Ve solo sus trabajos, checklist, marcación y chat. Nunca ve valores."],
   'team.hint.manager': ["Vê agenda, rotas, equipe e inspeções. Financeiro só se você liberar.", "Sees schedule, routes, team and inspections. Finances only if you allow.", "Ve agenda, rutas, equipo e inspecciones. Finanzas solo si lo permites."],
-  'team.hint.client': ["Acessa o portal: visitas, fotos, faturas e contrato. O convite sai pela ficha de cada cliente.", "Uses the portal: visits, photos, invoices and contract. The invite is sent from each client’s page.", "Usa el portal: visitas, fotos, facturas y contrato. La invitación sale de la ficha de cada cliente."],
-  'team.toClients': ["Ir para clientes", "Go to clients", "Ir a clientes"],
   'team.linkNote': ["Envie pelo WhatsApp. O link vale por 7 dias e você aprova cada pessoa antes de ela entrar.", "Send it over WhatsApp. The link lasts 7 days and you approve each person before they join.", "Envíalo por WhatsApp. El enlace dura 7 días y apruebas a cada persona antes de entrar."],
   'team.linkWa': ["Oi! Entre na equipe da {company} no Tidyo por este link: {link}", "Hi! Join the {company} team on Tidyo with this link: {link}", "¡Hola! Únete al equipo de {company} en Tidyo con este enlace: {link}"],
   'team.pay': ["Pagamento", "Pay", "Pago"],
@@ -2094,6 +2092,9 @@ const D: Dict = {
   'po.acceptAsk': ["Aceitar a proposta de {v} por mês? O contrato começa a valer a partir de hoje.", "Accept the {v}/month proposal? The contract starts today.", "¿Aceptar la propuesta de {v} al mes? El contrato empieza hoy."],
   'po.accepted': ["Proposta aceita. Obrigado!", "Proposal accepted. Thank you!", "Propuesta aceptada. ¡Gracias!"],
   'po.proposalPdf': ["Baixar a proposta (PDF)", "Download proposal (PDF)", "Descargar la propuesta (PDF)"],
+  'err.account_locked': ["Sua conta está pausada, então nada pode ser alterado agora. Seus dados continuam salvos.", "Your account is paused, so nothing can be changed right now. Your data is still saved.", "Tu cuenta está en pausa, así que no se puede cambiar nada ahora. Tus datos siguen guardados."],
+  'err.plan_limit.portal_not_in_plan': ["O portal do cliente faz parte do plano Pro.", "The client portal is part of the Pro plan.", "El portal del cliente es parte del plan Pro."],
+  'err.plan_limit.routes_not_in_plan': ["Rotas otimizadas fazem parte do plano Pro.", "Optimized routes are part of the Pro plan.", "Las rutas optimizadas son parte del plan Pro."],
 };
 
 const idx: Record<Lang, number> = { 'pt-BR': 0, en: 1, es: 2 };
