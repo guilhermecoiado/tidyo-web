@@ -44,7 +44,7 @@ export function AuthShell({ title, sub, children }: { title: string; sub?: strin
       </div>
       <div style={{ flex: 1, width: '100%', maxWidth: 480, margin: '0 auto', boxSizing: 'border-box', padding: '22px 20px calc(24px + env(safe-area-inset-bottom))', display: 'flex', flexDirection: 'column', gap: 14 }}>
         {children}
-        <span style={{ marginTop: 'auto', paddingTop: 12, textAlign: 'center', fontSize: 11.5, fontWeight: 700, color: '#7F9692' }}>Tidyo by YEHI · Developed by YEHI</span>
+        <span style={{ marginTop: 'auto', paddingTop: 12, textAlign: 'center', fontSize: 11.5, fontWeight: 700, color: '#7F9692' }}>Tidyo by YEHI</span>
       </div>
     </div>
   );

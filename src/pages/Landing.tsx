@@ -857,7 +857,7 @@ export default function Landing() {
         <a href="/entrar" style={{ color: "#5FD4C1", textDecoration: "none", fontWeight: "800", fontSize: "14px" }}>Entrar</a>
       </div>
     </div>
-    <div className="wrap" style={{ marginTop: "28px", fontSize: "13px", color: "#8FB3AC" }}>© 2026 Tidyo by YEHI. Todos os direitos reservados. · Developed by YEHI</div>
+    <div className="wrap" style={{ marginTop: "28px", fontSize: "13px", color: "#8FB3AC" }}>© 2026 Tidyo by YEHI. Todos os direitos reservados.</div>
   </footer>
 
   

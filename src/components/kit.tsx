@@ -200,5 +200,5 @@ export const hm = (iso: string | Date, lang: string) => {
 
 /** Brand credit shown in footers */
 export function ByYehi({ color = '#7F9692', style }: { color?: string; style?: CSSProperties }) {
-  return <span className="nw" style={{ fontSize: 11.5, fontWeight: 700, color, letterSpacing: '0.01em', ...style }}>Tidyo by YEHI · Developed by YEHI</span>;
+  return <span className="nw" style={{ fontSize: 11.5, fontWeight: 700, color, letterSpacing: '0.01em', ...style }}>Tidyo by YEHI</span>;
 }
