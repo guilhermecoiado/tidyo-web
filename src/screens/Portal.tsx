@@ -241,6 +241,8 @@ function useVisit(id: string) {
 }
 
 function LastVisit({ job, company, onOpen, onRated }: { job: PJob; company: string; onOpen: () => void; onRated: () => void }) {
+  const [review, setReview] = useState('');
+  useEffect(() => { supabase.rpc('portal_review_url').then(({ data }) => setReview(typeof data === 'string' ? data : '')); }, []);
   const { t, lang, toast, tErr } = useApp();
   const label = useTaskLabel();
   const { items, photos, visit } = useVisit(job.id);
@@ -297,6 +299,12 @@ function LastVisit({ job, company, onOpen, onRated }: { job: PJob; company: stri
             <span style={{ fontSize: 13, fontWeight: 800 }}>{sent ? t('po.rated', { company }) : t('po.yourRating')}</span>
             <Stars value={sent ? stars : job.rating || 0} size={36} />
             {job.rating_comment && !sent && <span style={{ fontSize: 12.5, color: C.muted }}>“{job.rating_comment}”</span>}
+            {review && (sent ? stars : job.rating) === 5 && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, background: '#F4F7F6', borderRadius: 14, padding: 12 }}>
+                <span style={{ fontSize: 13, lineHeight: 1.45 }}>{t('po.googleAsk', { company })}</span>
+                <a href={review} target="_blank" rel="noreferrer" style={{ minHeight: 44, borderRadius: 13, background: NAVY, color: '#FFFFFF', fontWeight: 800, fontSize: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none' }}>{t('po.googleBtn')}</a>
+              </div>
+            )}
           </>
         ) : canRate(job) ? (
           <>

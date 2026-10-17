@@ -1969,6 +1969,11 @@ const D: Dict = {
   'rem.title': ["Lembrar o cliente da visita", "Remind the client", "Recordar la visita al cliente"],
   'rem.subject': ["Lembrete da sua limpeza · {company}", "Your cleaning reminder · {company}", "Recordatorio de tu limpieza · {company}"],
   'rem.text': ["Oi, {name}! Aqui é da {company}. Passando para lembrar da sua limpeza de {day}, às {time}, em {address}. Se precisar mudar algo, é só responder esta mensagem.", "Hi {name}! This is {company}. Just a reminder of your cleaning on {day} at {time}, at {address}. If anything needs to change, just reply to this message.", "¡Hola, {name}! Te escribe {company}. Te recordamos tu limpieza del {day} a las {time}, en {address}. Si necesitas cambiar algo, responde este mensaje."],
+  'set.review': ["Link de avaliação no Google", "Google review link", "Link de reseña en Google"],
+  'set.reviewHint': ["Quando um cliente der 5 estrelas no portal, o Tidyo convida para repetir a avaliação no Google. Pegue o link em Google Business › Pedir avaliações.", "When a client gives 5 stars in the portal, Tidyo invites them to post it on Google too. Get the link in Google Business › Ask for reviews.", "Cuando un cliente da 5 estrellas en el portal, Tidyo lo invita a dejar la reseña en Google. Copia el link en Google Business › Pedir reseñas."],
+  'set.reviewBad': ["O link precisa começar com https://", "The link must start with https://", "El link debe empezar con https://"],
+  'po.googleAsk': ["Que bom que gostou! Pode deixar essa avaliação no Google também? Ajuda muito a {company}.", "So glad you liked it! Would you post this review on Google too? It really helps {company}.", "¡Qué bueno que te gustó! ¿Puedes dejar esta reseña también en Google? Ayuda mucho a {company}."],
+  'po.googleBtn': ["Avaliar no Google", "Review on Google", "Reseñar en Google"],
 };
 
 const idx: Record<Lang, number> = { 'pt-BR': 0, en: 1, es: 2 };

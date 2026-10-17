@@ -175,7 +175,7 @@ function useSaveCompany() {
 function CompanyPage() {
   const { t, company } = useApp();
   const save = useSaveCompany();
-  const [f, setF] = useState({ name: company?.name || '', address: company?.address || '', state: company?.state || '', timezone: company?.timezone || 'America/New_York', mode: company?.mode || 'residential' });
+  const [f, setF] = useState({ name: company?.name || '', address: company?.address || '', state: company?.state || '', timezone: company?.timezone || 'America/New_York', mode: company?.mode || 'residential', review: company?.google_review_url || '' });
   const zones = ['America/New_York', 'America/Chicago', 'America/Denver', 'America/Phoenix', 'America/Los_Angeles', 'America/Anchorage', 'Pacific/Honolulu'];
   return (
     <div className="k-card" style={{ gap: 14 }}>
@@ -185,9 +185,11 @@ function CompanyPage() {
         <label className="k-field"><span>{t('set.state')}</span><input className="k-input" value={f.state} maxLength={2} onChange={(e) => setF({ ...f, state: e.target.value.toUpperCase() })} placeholder="CT" /></label>
         <label className="k-field"><span>{t('set.tz')}</span><Select value={f.timezone} onChange={(v) => setF({ ...f, timezone: v })} label={t('set.tz')}>{zones.map((z) => <option key={z} value={z}>{z.replace('America/', '').replace('Pacific/', '').replace('_', ' ')}</option>)}</Select></label>
       </div>
+      <label className="k-field"><span>{t('set.review')}</span><input className="k-input" inputMode="url" value={f.review} onChange={(e) => setF({ ...f, review: e.target.value.trim() })} placeholder="https://g.page/r/…/review" /><span className="k-help">{t('set.reviewHint')}</span></label>
+      {f.review && !/^https:\/\//.test(f.review) && <span className="k-err">{t('set.reviewBad')}</span>}
       <span className="k-lbl">{t('set.mode')}</span>
       <Segment value={f.mode} onChange={(v) => setF({ ...f, mode: v })} label={t('set.mode')} options={[{ value: 'residential', label: t('cl.res') }, { value: 'commercial', label: t('cl.com') }, { value: 'both', label: t('set.both') }]} />
-      <button className="k-btn k-btn-fill k-btn-big" disabled={!f.name.trim()} onClick={() => { save({ name: f.name.trim(), address: f.address || null, state: f.state || null, timezone: f.timezone, mode: f.mode }).then((ok) => { if (ok && company && f.address.trim() && f.address !== company.address) supabase.functions.invoke('geocode', { body: { table: 'companies', ids: [company.id], address: f.address.trim() } }).then(() => undefined).catch(() => undefined); }); try { const s = JSON.parse(localStorage.getItem('tidyo.steps') || '{}'); localStorage.setItem('tidyo.steps', JSON.stringify({ ...s, emp: true })); } catch { /* ignore */ } }}>{t('c.save')}</button>
+      <button className="k-btn k-btn-fill k-btn-big" disabled={!f.name.trim() || (!!f.review && !/^https:\/\//.test(f.review))} onClick={() => { save({ name: f.name.trim(), address: f.address || null, state: f.state || null, timezone: f.timezone, mode: f.mode, google_review_url: f.review || null }).then((ok) => { if (ok && company && f.address.trim() && f.address !== company.address) supabase.functions.invoke('geocode', { body: { table: 'companies', ids: [company.id], address: f.address.trim() } }).then(() => undefined).catch(() => undefined); }); try { const s = JSON.parse(localStorage.getItem('tidyo.steps') || '{}'); localStorage.setItem('tidyo.steps', JSON.stringify({ ...s, emp: true })); } catch { /* ignore */ } }}>{t('c.save')}</button>
     </div>
   );
 }
