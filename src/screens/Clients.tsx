@@ -4,6 +4,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useApp } from '../lib/session';
 import { Confirm, Sheet } from '../components/ui';
+import { LeadsSheet, useNewLeads } from './Leads';
 import { C, OwnerBar, ProNote, usePro, Svg, I, colorOf, initials, hm, shortName, usd } from '../components/kit';
 import { archiveClient, getClients, getMembers, type Client, type Member } from '../lib/data';
 import { addDays, randomToken, sha256Hex } from '../lib/format';
@@ -25,6 +26,8 @@ export default function Clients() {
   const [sel, setSel] = useState<Client | null>(null);
   const [imp, setImp] = useState(false);
   const [params, setParams] = useSearchParams();
+  const [newLeads, reloadLeads] = useNewLeads();
+  const [leads, setLeads] = useState(params.get('pedidos') === '1');
 
   const load = useCallback(async () => {
     if (!company) return;
@@ -81,6 +84,12 @@ export default function Clients() {
           <button className="k-btn k-btn-line nw" style={{ minHeight: 40, borderRadius: 12, fontSize: 12.5, padding: '0 12px' }} onClick={() => setImp(true)}>{t('cl.import')}</button>
           <Link to="/app/clientes/novo" className="k-iconbtn" style={{ background: C.accent, border: 0 }} aria-label={t('cl.new')}><Svg d={I.plus} size={20} color="#FFFFFF" w={2.4} /></Link>
         </div>
+        {newLeads > 0 && (
+          <button className="k-note ok" onClick={() => setLeads(true)} style={{ textAlign: 'left', cursor: 'pointer', fontFamily: 'inherit', width: '100%' }}>
+            <span style={{ flex: 1, fontSize: 13, fontWeight: 700, color: '#0B4F46' }}>{t('ld.banner', { n: newLeads })}</span>
+            <span className="k-btn k-btn-sm k-btn-fill nw" style={{ minHeight: 36, flex: 'none', color: '#FFFFFF' }}>{t('ld.see')}</span>
+          </button>
+        )}
         <label style={{ display: 'block' }}>
           <span className="sr-only">{t('c.search')}</span>
           <input className="k-input" value={q} onChange={(e) => setQ(e.target.value)} placeholder={t('cl.searchPh')} />
@@ -114,6 +123,7 @@ export default function Clients() {
         </div>
       </main>
       <OwnerBar />
+      {leads && <LeadsSheet onClose={() => { setLeads(false); if (params.get('pedidos')) { const p = new URLSearchParams(params); p.delete('pedidos'); setParams(p, { replace: true }); } }} onChanged={reloadLeads} />}
       {sel && <ClientSheet client={sel} color={avatarColor(sel)} profit={profit.get(sel.id)} onClose={() => setSel(null)} onChanged={() => { setSel(null); load(); }} />}
       {imp && <ImportSheet onClose={() => setImp(false)} onDone={() => { setImp(false); load(); }} />}
     </div>

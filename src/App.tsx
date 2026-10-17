@@ -30,6 +30,7 @@ import JoinTeam, { PendingJoin } from './pages/JoinTeam';
 import Legal from './pages/Legal';
 import Portal from './screens/Portal';
 import Locked from './screens/Locked';
+import Quote from './pages/Quote';
 
 function Gate({ need, children }: { need: 'staff' | 'member' | 'portal' | 'any' | 'admin'; children: ReactNode }) {
   const { ready, session, membership, isStaff, portal, isAdmin, access } = useApp();
@@ -87,6 +88,7 @@ function Routed() {
       <Route path="/comecar" element={<Onboarding />} />
       <Route path="/convite" element={<AcceptInvite />} />
       <Route path="/equipe" element={<JoinTeam />} />
+      <Route path="/orcamento/:slug" element={<Quote />} />
       <Route path="/termos" element={<Legal doc="terms" />} />
       <Route path="/privacidade" element={<Legal doc="privacy" />} />
       <Route path="/dia" element={<Gate need="member"><MyDay /></Gate>} />

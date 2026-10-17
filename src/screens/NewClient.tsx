@@ -27,6 +27,7 @@ export default function NewClient() {
   const nav = useNavigate();
   const [params] = useSearchParams();
   const editId = params.get('edit');
+  const leadId = params.get('lead');
   const pr = pricingOf(company?.pricing);
   const [kind, setKind] = useState<'residential' | 'commercial'>(company?.mode === 'commercial' ? 'commercial' : 'residential');
   const isCom = kind === 'commercial';
@@ -62,6 +63,19 @@ export default function NewClient() {
         setEdit({ propertyId: p?.id || null, portal: !!c.portal_user_id });
       });
   }, [editId]);
+
+  // coming from a quote request: fill what the visitor already told us
+  useEffect(() => {
+    if (!leadId || editId) return;
+    supabase.from('leads').select('kind, name, phone, email, language, address, bedrooms, bathrooms, square_feet, message').eq('id', leadId).maybeSingle().then(({ data }) => {
+      if (!data) return;
+      const l = data as { kind: 'residential' | 'commercial'; name: string; phone: string | null; email: string | null; language: Lang; address: string | null; bedrooms: number | null; bathrooms: number | null; square_feet: number | null; message: string | null };
+      setKind(l.kind); setLang(l.language);
+      setF((x) => ({ ...x, name: l.name, phone: l.phone || '', email: l.email || '', address: l.address || '', notes: l.message || '' }));
+      if (l.kind === 'commercial') setCom((c) => ({ ...c, sqft: l.square_feet || c.sqft }));
+      else setRes((r) => ({ ...r, beds: l.bedrooms ?? r.beds, baths: Number(l.bathrooms ?? r.baths) }));
+    });
+  }, [leadId, editId]);
 
   const up = (k: keyof typeof f) => (e: { target: { value: string } }) => setF({ ...f, [k]: e.target.value });
   const addr = parseAddress(f.address);
@@ -118,6 +132,7 @@ export default function NewClient() {
         const { data: c, error: e1 } = await supabase.from('clients').insert({ ...clientRow, company_id: company.id }).select('id').single();
         if (e1) throw e1;
         clientId = c.id;
+        if (leadId) supabase.from('leads').update({ status: 'won', client_id: clientId }).eq('id', leadId).then(() => undefined);
         const { data: p, error: e2 } = await supabase.from('properties').insert({ ...propRow, company_id: company.id, client_id: clientId }).select('id').single();
         if (e2) throw e2;
         propertyId = p.id;

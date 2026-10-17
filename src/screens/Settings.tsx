@@ -90,6 +90,7 @@ function SettingsHome() {
         <Group title={t('set.gCompany')}>
           <Row icon={IC.company} label={t('set.company')} sub={t('set.companySub')} to="/app/mais/empresa" />
           <Row icon={IC.lang} label={t('set.lang')} sub={`${LANG_LABEL[lang]} · US$`} to="/app/mais/idioma" />
+          <Row icon={IC.link} label={t('set.quote')} sub={t('set.quoteSub')} to="/app/mais/orcamento" />
         </Group>
         <Group title={t('set.gOps')}>
           <Row icon={IC.price} label={t('set.prices')} sub={t('set.pricesSub', { s: counts.services, e: counts.extras })} to="/app/mais/precos" />
@@ -135,7 +136,7 @@ function SettingsHome() {
 
 function SettingsPage({ section }: { section: string }) {
   const { t } = useApp();
-  const titles: Record<string, string> = { empresa: t('set.company'), idioma: t('set.lang'), precos: t('set.prices'), checklists: t('set.checklists'), cancelamento: t('set.cancel'), estoque: t('set.stock'), equipe: t('set.team'), recebimento: t('set.payInfo'), stripe: t('set.stripe'), integracoes: t('set.integrations'), seguranca: t('set.security'), avisos: t('set.notif') };
+  const titles: Record<string, string> = { empresa: t('set.company'), idioma: t('set.lang'), precos: t('set.prices'), checklists: t('set.checklists'), cancelamento: t('set.cancel'), estoque: t('set.stock'), equipe: t('set.team'), recebimento: t('set.payInfo'), stripe: t('set.stripe'), integracoes: t('set.integrations'), seguranca: t('set.security'), avisos: t('set.notif'), orcamento: t('set.quote') };
   return (
     <div className="k-screen">
       <main className="k-page" style={{ gap: 16 }}>
@@ -152,9 +153,58 @@ function SettingsPage({ section }: { section: string }) {
         {section === 'integracoes' && <Info text={t('set.integrationsInfo')} action={<Link to="/app/financas" className="k-btn k-btn-line">{t('fin.reports')}</Link>} />}
         {section === 'seguranca' && <SecuritySection />}
         {section === 'avisos' && <NotifPage />}
+        {section === 'orcamento' && <QuotePage />}
       </main>
       <OwnerBar />
     </div>
+  );
+}
+
+/** The public quote page: link to share, its short name and the requests received */
+function QuotePage() {
+  const { t, tErr, company, refresh, toast } = useApp();
+  const [slug, setSlug] = useState<string | null>(null);
+  const [edit, setEdit] = useState(false);
+  const [busy, setBusy] = useState(false);
+  useEffect(() => { if (company) supabase.from('companies').select('slug').eq('id', company.id).maybeSingle().then(({ data }) => { const v = (data as { slug: string | null } | null)?.slug || ''; setSlug(v); if (!v) setEdit(true); }); }, [company]);
+  const url = `${window.location.origin}/orcamento/${slug}`;
+  const valid = /^[a-z0-9][a-z0-9-]{1,38}[a-z0-9]$/.test(slug || '');
+  const copy = async () => { try { await navigator.clipboard.writeText(url); toast(t('set.copied')); } catch { toast(url); } };
+  const share = async () => {
+    const nav = navigator as Navigator & { share?: (d: { url: string; title?: string }) => Promise<void> };
+    if (nav.share) { try { await nav.share({ url, title: company?.name }); } catch { /* closed */ } } else copy();
+  };
+  const save = async () => {
+    if (!company || !valid) return;
+    setBusy(true);
+    const { error } = await supabase.from('companies').update({ slug }).eq('id', company.id);
+    setBusy(false);
+    if (error) toast(/duplicate|unique/i.test(error.message) ? t('set.slugTaken') : tErr(error.message)); else { setEdit(false); toast(t('c.saved')); refresh(); }
+  };
+  return (
+    <>
+      <div className="k-card" style={{ gap: 12 }}>
+        <span style={{ fontSize: 14, lineHeight: 1.5 }}>{t('set.quoteInfo')}</span>
+        {slug === null ? <div className="skeleton" style={{ height: 44 }} /> : edit ? (
+          <>
+            <label className="k-field"><span>{t('set.slug')}</span><input className="k-input" value={slug} onChange={(e) => setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '').slice(0, 40))} /><span className="k-help">{window.location.host}/orcamento/{slug}</span></label>
+            {!valid && <span className="k-err">{t('set.slugBad')}</span>}
+            <div className="k-pair"><button className="k-btn k-btn-line" onClick={() => setEdit(false)}>{t('c.cancel')}</button><button className="k-btn k-btn-fill" disabled={busy || !valid} onClick={save}>{t('c.save')}</button></div>
+          </>
+        ) : (
+          <>
+            <span className="k-help" style={{ wordBreak: 'break-all', background: C.bg, borderRadius: 12, padding: '10px 12px', color: C.ink, fontWeight: 700 }}>{url}</span>
+            <div className="k-pair"><button className="k-btn k-btn-line" onClick={copy}>{t('set.copy')}</button><button className="k-btn k-btn-fill" onClick={share}>{t('set.share')}</button></div>
+            <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+              <a className="k-link" href={url} target="_blank" rel="noreferrer" style={{ minHeight: 40, display: 'inline-flex', alignItems: 'center' }}>{t('set.preview')}</a>
+              <button className="k-link" style={{ minHeight: 40 }} onClick={() => setEdit(true)}>{t('set.slugEdit')}</button>
+            </div>
+          </>
+        )}
+      </div>
+      <Link to="/app/clientes?pedidos=1" className="k-btn k-btn-line">{t('set.quoteLeads')}</Link>
+      <span className="k-help">{t('set.quoteTip')}</span>
+    </>
   );
 }
 
