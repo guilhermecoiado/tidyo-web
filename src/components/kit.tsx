@@ -77,7 +77,7 @@ export function OwnerBar() {
     ['/app/agenda', I.cal, t('nav.schedule'), pathname.startsWith('/app/rotas')],
     ['/app/clientes', I.users, t('nav.clients')],
     ['/app/financas', I.chart, t('nav.finance'), pathname.startsWith('/app/cobrancas'), unbilled],
-    ['/app/mais', I.more, t('nav.more'), pathname.startsWith('/app/contratos') || pathname.startsWith('/app/conta')],
+    ['/app/mais', I.more, t('nav.more'), pathname.startsWith('/app/mais/') || pathname.startsWith('/app/contratos') || pathname.startsWith('/app/conta')],
   ];
   return <Bar items={items} cols={5} />;
 }

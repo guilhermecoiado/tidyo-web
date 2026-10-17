@@ -1642,7 +1642,7 @@ const D: Dict = {
   'sa.st.paused': ["Suspenso", "Suspended", "Suspendido"],
   'sa.st.canceled': ["Cancelado", "Canceled", "Cancelado"],
   'sa.direct': ["direto", "direct", "directo"],
-  'sa.yearly': ["anual", "yearly", "anual"],
+  'sa.yearly': ["Anual", "Yearly", "Anual"],
   'sa.mode': ["Modo", "Mode", "Modo"],
   'sa.m.residential': ["Residencial", "Residential", "Residencial"],
   'sa.m.commercial': ["Comercial", "Commercial", "Comercial"],
@@ -1902,6 +1902,14 @@ const D: Dict = {
   'sa.lastSeen': ["último acesso {d}", "last seen {d}", "último acceso {d}"],
   'sa.neverSeen': ["nunca entrou", "never signed in", "nunca entró"],
   'lg.byYehi': ["O Tidyo é um produto da YEHI · Tidyo by YEHI · Developed by YEHI", "Tidyo is a YEHI product · Tidyo by YEHI · Developed by YEHI", "Tidyo es un producto de YEHI · Tidyo by YEHI · Developed by YEHI"],
+  'sa.subTitle': ["Plano e assinatura", "Plan and subscription", "Plan y suscripción"],
+  'sa.addCommercial': ["Incluir Comercial (combo com 20% off)", "Include Commercial (20% off combo)", "Incluir Comercial (combo con 20% off)"],
+  'sa.tier': ["Faixa de contratos", "Contract tier", "Rango de contratos"],
+  'sa.billing': ["Cobrança", "Billing", "Cobro"],
+  'sa.monthly': ["Mensal", "Monthly", "Mensual"],
+  'sa.paidUntil': ["Pago até", "Paid until", "Pagado hasta"],
+  'sa.subHint': ["Use para ativar quem pagou por fora (Zelle, PIX), estender o teste ou trocar o plano. O tipo de operação da empresa acompanha o plano. Fica registrado no histórico.", "Use it to activate customers who paid outside the app, extend a trial or change the plan. The company's operation type follows the plan. It is logged.", "Úsalo para activar a quien pagó por fuera, extender la prueba o cambiar el plan. El tipo de operación sigue al plan. Queda registrado."],
+  'sa.saveSub': ["Salvar plano", "Save plan", "Guardar plan"],
 };
 
 const idx: Record<Lang, number> = { 'pt-BR': 0, en: 1, es: 2 };

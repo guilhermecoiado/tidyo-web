@@ -20,7 +20,8 @@ Deno.serve(async (req) => {
       global: { headers: { Authorization: req.headers.get('Authorization') || '' } }, auth: { persistSession: false } });
     const [{ data: me }, { data: ok }] = await Promise.all([caller.auth.getUser(), caller.rpc('is_platform_admin')]);
     if (!me?.user || !ok) return json({ error: 'not_allowed' }, 403);
-    const body = await req.json() as { action: string; company_id: string; user_id?: string; name?: string; state?: string; address?: string; full_name?: string; phone?: string; email?: string };
+    const body = await req.json() as { action: string; company_id: string; user_id?: string; name?: string; state?: string; address?: string; full_name?: string; phone?: string; email?: string;
+      mode?: string; plan?: string; has_commercial?: boolean; commercial_tier?: number | null; interval?: string; status?: string; trial_ends_at?: string | null; current_period_end?: string | null };
     const { action, company_id } = body;
     if (!company_id) return json({ error: 'company_required' }, 400);
     const audit = (what: string, detail: Record<string, unknown>, row?: string) =>
@@ -33,7 +34,7 @@ Deno.serve(async (req) => {
 
     if (action === 'get') {
       const [{ data: company }, { data: members }] = await Promise.all([
-        admin.from('companies').select('id, name, state, address, mode, created_at').eq('id', company_id).maybeSingle(),
+        admin.from('companies').select('id, name, state, address, mode, created_at, subscriptions(plan, status, has_commercial, commercial_tier, interval, trial_ends_at, current_period_end, discount_pct)').eq('id', company_id).maybeSingle(),
         admin.from('memberships').select('id, user_id, display_name, role, status').eq('company_id', company_id).not('user_id', 'is', null).order('created_at'),
       ]);
       const people = [];
@@ -48,9 +49,25 @@ Deno.serve(async (req) => {
       if (body.name?.trim()) patch.name = body.name.trim();
       if (body.state !== undefined) patch.state = body.state || null;
       if (body.address !== undefined) patch.address = body.address || null;
+      if (body.mode && ['residential', 'commercial', 'both'].includes(body.mode)) patch.mode = body.mode;
       const { error } = await admin.from('companies').update(patch).eq('id', company_id);
       if (error) return json({ error: error.message }, 400);
       await audit('edit_company', patch);
+      return json({ ok: true });
+    }
+    if (action === 'update_subscription') {
+      const plans = ['essencial', 'pro', 'comercial'], statuses = ['trialing', 'active', 'past_due', 'paused', 'canceled'];
+      if (!body.plan || !plans.includes(body.plan) || !body.status || !statuses.includes(body.status)) return json({ error: 'invalid_plan' }, 400);
+      const com = body.plan === 'comercial' || (body.plan === 'pro' && !!body.has_commercial);
+      const tier = com ? Math.min(4, Math.max(1, Number(body.commercial_tier) || 1)) : null;
+      const patch = { plan: body.plan, has_commercial: com, commercial_tier: tier, interval: body.interval === 'year' ? 'year' : 'month', status: body.status,
+        trial_ends_at: body.trial_ends_at || null, current_period_end: body.current_period_end || null, cancel_at_period_end: false, updated_at: new Date().toISOString() };
+      const { error } = await admin.from('subscriptions').update(patch).eq('company_id', company_id);
+      if (error) return json({ error: error.message }, 400);
+      // the company must be able to use what the plan sells
+      const mode = body.plan === 'essencial' ? 'residential' : body.plan === 'comercial' ? 'commercial' : com ? 'both' : 'residential';
+      await admin.from('companies').update({ mode }).eq('id', company_id);
+      await audit('edit_subscription', { ...patch, mode });
       return json({ ok: true });
     }
     if (!body.user_id || !(await inCompany(body.user_id))) return json({ error: 'user_not_in_company' }, 400);

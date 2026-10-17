@@ -250,6 +250,7 @@ async function adminUser(body: Record<string, unknown>) {
 function EditCustomer({ companyId, onClose, onSaved }: { companyId: string; onClose: () => void; onSaved: () => void }) {
   const { t, lang, toast } = useApp();
   const [co, setCo] = useState<{ name: string; state: string; address: string } | null>(null);
+  const [sb, setSb] = useState<{ plan: string; has_commercial: boolean; commercial_tier: number; interval: string; status: string; trial_ends_at: string; current_period_end: string } | null>(null);
   const [people, setPeople] = useState<Person[]>([]);
   const [sel, setSel] = useState<Person | null>(null);
   const [form, setForm] = useState({ full_name: '', email: '', phone: '' });
@@ -261,6 +262,9 @@ function EditCustomer({ companyId, onClose, onSaved }: { companyId: string; onCl
     if (error) { toast(error); return; }
     const c = data.company || {};
     setCo({ name: c.name || '', state: c.state || '', address: c.address || '' });
+    const x = (Array.isArray(c.subscriptions) ? c.subscriptions[0] : c.subscriptions) || {};
+    setSb({ plan: x.plan || 'pro', has_commercial: !!x.has_commercial, commercial_tier: x.commercial_tier || 1, interval: x.interval || 'month', status: x.status || 'trialing',
+      trial_ends_at: (x.trial_ends_at || '').slice(0, 10), current_period_end: (x.current_period_end || '').slice(0, 10) });
     setPeople(data.people || []);
   }, [companyId, toast]);
   useEffect(() => { load(); }, [load]);
@@ -269,6 +273,14 @@ function EditCustomer({ companyId, onClose, onSaved }: { companyId: string; onCl
     if (!co) return;
     setBusy(true);
     const { error } = await adminUser({ action: 'update_company', company_id: companyId, ...co });
+    setBusy(false);
+    if (error) toast(error); else { toast(t('c.saved')); onSaved(); }
+  };
+  const saveSub = async () => {
+    if (!sb) return;
+    setBusy(true);
+    const { error } = await adminUser({ action: 'update_subscription', company_id: companyId, ...sb,
+      trial_ends_at: sb.trial_ends_at ? `${sb.trial_ends_at}T23:59:00Z` : null, current_period_end: sb.current_period_end ? `${sb.current_period_end}T23:59:00Z` : null });
     setBusy(false);
     if (error) toast(error); else { toast(t('c.saved')); onSaved(); }
   };
@@ -325,6 +337,32 @@ function EditCustomer({ companyId, onClose, onSaved }: { companyId: string; onCl
             <label className="k-field"><span>{t('sa.address')}</span><input className="k-input" value={co.address} onChange={(e) => setCo({ ...co, address: e.target.value })} /></label>
           </div>
           <button className="k-btn" style={{ background: C.ink, color: '#FFFFFF', border: 0 }} disabled={busy || !co.name.trim()} onClick={saveCompany}>{t('sa.saveCompany')}</button>
+          {sb && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, borderTop: `1px solid ${C.line}`, paddingTop: 12 }}>
+              <b style={{ fontSize: 14 }}>{t('sa.subTitle')}</b>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                <label className="k-field"><span>{t('sa.th.plan')}</span><Select value={sb.plan} onChange={(v) => setSb({ ...sb, plan: v })} label={t('sa.th.plan')}><option value="essencial">Essencial</option><option value="pro">Pro</option><option value="comercial">Comercial</option></Select></label>
+                <label className="k-field"><span>{t('sa.th.status')}</span><Select value={sb.status} onChange={(v) => setSb({ ...sb, status: v })} label={t('sa.th.status')}>{['trialing', 'active', 'past_due', 'paused', 'canceled'].map((x) => <option key={x} value={x}>{t(`sa.st.${x}`)}</option>)}</Select></label>
+              </div>
+              {sb.plan === 'pro' && (
+                <label className="check" style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 13.5, fontWeight: 600, minHeight: 40 }}>
+                  <input type="checkbox" checked={sb.has_commercial} onChange={() => setSb({ ...sb, has_commercial: !sb.has_commercial })} />{t('sa.addCommercial')}
+                </label>
+              )}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                {(sb.plan === 'comercial' || (sb.plan === 'pro' && sb.has_commercial)) && (
+                  <label className="k-field"><span>{t('sa.tier')}</span><Select value={String(sb.commercial_tier)} onChange={(v) => setSb({ ...sb, commercial_tier: Number(v) })} label={t('sa.tier')}><option value="1">{t('sa.tier1')}</option><option value="2">6–15</option><option value="3">16–40</option><option value="4">40+</option></Select></label>
+                )}
+                <label className="k-field"><span>{t('sa.billing')}</span><Select value={sb.interval} onChange={(v) => setSb({ ...sb, interval: v })} label={t('sa.billing')}><option value="month">{t('sa.monthly')}</option><option value="year">{t('sa.yearly')}</option></Select></label>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                <label className="k-field"><span>{t('sa.trialUntil')}</span><DateField label={t('sa.trialUntil')} value={sb.trial_ends_at} onChange={(v) => setSb({ ...sb, trial_ends_at: v })} /></label>
+                <label className="k-field"><span>{t('sa.paidUntil')}</span><DateField label={t('sa.paidUntil')} value={sb.current_period_end} onChange={(v) => setSb({ ...sb, current_period_end: v })} /></label>
+              </div>
+              <span style={{ fontSize: 12, color: C.muted, lineHeight: 1.45 }}>{t('sa.subHint')}</span>
+              <button className="k-btn" style={{ background: C.ink, color: '#FFFFFF', border: 0 }} disabled={busy} onClick={saveSub}>{t('sa.saveSub')}</button>
+            </div>
+          )}
           <b style={{ fontSize: 14, marginTop: 4 }}>{t('sa.people')}</b>
           <div style={{ display: 'flex', flexDirection: 'column', border: `1px solid ${C.line}`, borderRadius: 14 }}>
             {people.length === 0 ? <span style={{ padding: 14, fontSize: 13, color: C.muted }}>—</span> : people.map((p, i) => (
