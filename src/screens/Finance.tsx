@@ -5,7 +5,7 @@ import { supabase } from '../lib/supabase';
 import { useApp } from '../lib/session';
 import { Sheet } from '../components/ui';
 import { DateField, Select } from '../components/pickers';
-import { C, OwnerBar, PILL, SheetActions, Svg, I, usd, useUnbilled } from '../components/kit';
+import { C, OwnerBar, ProNote, usePro, PILL, SheetActions, Svg, I, usd, useUnbilled } from '../components/kit';
 import { getClients, type Client } from '../lib/data';
 import { hoursBetween, isoDate } from '../lib/format';
 import { healthReady } from '../lib/finance';
@@ -399,6 +399,7 @@ function download(name: string, rows: (string | number)[][]) {
 
 function ReportsSheet({ month, onClose }: { month: Month; onClose: () => void }) {
   const { t, company } = useApp();
+  const pro = usePro();
   const { from, to } = monthRange(month);
   const exportCsv = async () => {
     if (!company) return;
@@ -412,13 +413,14 @@ function ReportsSheet({ month, onClose }: { month: Month; onClose: () => void })
     download(`tidyo-${isoDate(from).slice(0, 7)}.csv`, rows);
   };
   const items: [string, string, () => void, string?][] = [
-    [t('fin.export'), 'CSV · QuickBooks, Xero, Excel', exportCsv],
+    ...(pro ? [[t('fin.export'), 'CSV · QuickBooks, Xero, Excel', exportCsv] as [string, string, () => void]] : []),
     [t('fin.print'), t('fin.printSub'), () => { onClose(); setTimeout(() => window.print(), 300); }],
     [t('fin.teamPay'), t('fin.teamPaySub'), () => undefined, '/app/financas/equipe'],
     [t('fin.teamExp'), t('fin.teamExpSub'), () => undefined, '/app/financas/despesas'],
   ];
   return (
     <Sheet title={t('fin.reports')} onClose={onClose}>
+      {!pro && <ProNote text={t('pro.export')} />}
       <div className="k-list">
         {items.map(([label, sub, act, to]) => {
           const inner = <><span style={{ display: 'flex', flexDirection: 'column', flex: 1, minWidth: 0 }}><span style={{ fontWeight: 700, fontSize: 14 }}>{label}</span><span style={{ fontSize: 12, color: C.muted }}>{sub}</span></span><Svg d={I.chev} size={16} color="#9AA9A6" /></>;

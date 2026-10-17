@@ -3,7 +3,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { useApp } from '../lib/session';
 import { Confirm, Sheet } from '../components/ui';
-import { Avatar, C, Head, OwnerBar, PILL, Segment, SheetActions, Svg, I, colorOf, usd } from '../components/kit';
+import { Avatar, C, ProNote, usePro, Head, OwnerBar, PILL, Segment, SheetActions, Svg, I, colorOf, usd } from '../components/kit';
 import { getMembers, memberIndex, type Member } from '../lib/data';
 import { addDays, fmtHours, hoursBetween, isoDate, startOfDay, toCents } from '../lib/format';
 import { ExpenseSheet } from './Finance';
@@ -98,6 +98,7 @@ export function Expenses() {
 
 export function TeamPay() {
   const { t, tErr, company, toast, membership } = useApp();
+  const pro = usePro();
   const [period, setPeriod] = useState<Period>('month');
   const [members, setMembers] = useState<Member[]>([]);
   const [entries, setEntries] = useState<Entry[] | null>(null);
@@ -187,7 +188,7 @@ export function TeamPay() {
             <button className="k-link" style={{ alignSelf: 'flex-start', minHeight: 32 }} onClick={() => { setEditRate(r.m); setRateValue(r.rate ? (r.rate / 100).toFixed(2) : ''); }}>{r.rate ? t('team.editRate') : t('team.setRate')}</button>
           </div>
         ))}
-        <button className="k-btn k-btn-line" style={{ gap: 8 }} onClick={exportPay}><Svg d={I.receipt} size={16} />{t('fin.exportPay')}</button>
+        {pro ? <button className="k-btn k-btn-line" style={{ gap: 8 }} onClick={exportPay}><Svg d={I.receipt} size={16} />{t('fin.exportPay')}</button> : <ProNote text={t('pro.teamPay')} />}
         <span className="k-help">{t('fin.1099hint')}</span>
       </main>
       <OwnerBar />

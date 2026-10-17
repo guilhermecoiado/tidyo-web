@@ -68,6 +68,40 @@ export function useUnbilled() {
   return company && staff ? unbilledCount(company.id) || 0 : 0;
 }
 
+/** Essencial (after the trial) leaves out routes, client portal, team pay exports, QuickBooks export and the full Tidy review */
+export function usePro() {
+  const { sub } = useApp();
+  return !sub || sub.plan !== 'essencial' || sub.status === 'trialing';
+}
+
+/** Small "this is in Pro" card with a link to the plan page */
+export function ProNote({ text, dark }: { text: string; dark?: boolean }) {
+  const { t } = useApp();
+  return (
+    <Link to="/app/conta" className="k-card" style={{ flexDirection: 'row', alignItems: 'center', gap: 10, padding: '12px 14px', textDecoration: 'none', color: dark ? '#EAF5F2' : C.ink, background: dark ? 'rgba(255,255,255,.06)' : '#FFFFFF', borderColor: dark ? 'rgba(255,255,255,.12)' : C.line }}>
+      <span style={{ width: 32, height: 32, borderRadius: 10, background: dark ? 'rgba(95,212,193,.16)' : '#E3F1EE', display: 'grid', placeItems: 'center', flex: 'none' }}><Svg d={I.lock} size={16} color={dark ? C.mint : C.accent} /></span>
+      <span style={{ display: 'flex', flexDirection: 'column', flex: 1, minWidth: 0 }}>
+        <b style={{ fontSize: 13.5 }}>{t('pro.only')}</b>
+        <span style={{ fontSize: 12, lineHeight: 1.4, color: dark ? C.faint : C.muted }}>{text}</span>
+      </span>
+      <span className="nw" style={{ fontSize: 12.5, fontWeight: 800, color: dark ? C.mint : C.accent }}>{t('pro.see')}</span>
+    </Link>
+  );
+}
+
+/** Whole screen for a Pro-only page */
+export function ProPage({ title, text, back }: { title: string; text: string; back: string }) {
+  return (
+    <div className="k-screen">
+      <main className="k-page" style={{ gap: 14 }}>
+        <Head title={title} back={back} />
+        <ProNote text={text} />
+      </main>
+      <OwnerBar />
+    </div>
+  );
+}
+
 export function OwnerBar() {
   const { t } = useApp();
   const { pathname } = useLocation();

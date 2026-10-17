@@ -6,7 +6,7 @@ import { useApp } from '../lib/session';
 import { Confirm, Sheet } from '../components/ui';
 import { TimeField } from '../components/pickers';
 import { archiveClient } from '../lib/data';
-import { C, Head, Segment, Svg, SPARK, usd } from '../components/kit';
+import { C, Head, usePro, Segment, Svg, SPARK, usd } from '../components/kit';
 import { addDays, randomToken, sha256Hex } from '../lib/format';
 import { compressImage } from '../lib/photos';
 import type { Lang } from '../lib/i18n';
@@ -39,6 +39,7 @@ export default function NewClient() {
   const [days, setDays] = useState<Record<number, boolean>>({ 1: true, 3: true, 5: true });
   const [photos, setPhotos] = useState<{ path: string; url: string; label: string }[]>([]);
   const [portal, setPortal] = useState(true);
+  const pro = usePro();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [saved, setSaved] = useState<{ id: string; contract: boolean; link: string; geo: boolean } | null>(null);
@@ -135,7 +136,7 @@ export default function NewClient() {
         contract = true;
       }
       let link = '';
-      if (portal && !edit?.portal && (f.email || f.phone)) {
+      if (portal && pro && !edit?.portal && (f.email || f.phone)) {
         const token = randomToken();
         await supabase.from('clients').update({ portal_invite_hash: await sha256Hex(token), portal_invite_expires_at: addDays(new Date(), 7).toISOString() }).eq('id', clientId);
         link = `${window.location.origin}/portal/convite?t=${token}`;
@@ -236,7 +237,7 @@ export default function NewClient() {
           <span style={{ fontSize: 12, color: C.faint, lineHeight: 1.45 }}>{est.note} <Link to="/app/mais/precos" style={{ color: C.mint }}>{t('nc.editParams')}</Link></span>
         </div>
 
-        {!edit?.portal && (
+        {!edit?.portal && pro && (
           <label style={{ display: 'flex', alignItems: 'center', gap: 12, background: '#FFFFFF', border: `1px solid ${C.line}`, borderRadius: 16, padding: '12px 14px', cursor: 'pointer' }} className="check">
             <span style={{ display: 'flex', flexDirection: 'column', flex: 1 }}><span style={{ fontWeight: 800, fontSize: 14 }}>{t('nc.portal')}</span><span style={{ fontSize: 12, color: C.muted }}>{t('nc.portalHint')}</span></span>
             <input type="checkbox" checked={portal} onChange={() => setPortal(!portal)} />

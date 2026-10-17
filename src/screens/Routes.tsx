@@ -4,7 +4,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useApp } from '../lib/session';
 import { Sheet } from '../components/ui';
-import { C, Empty, Head, I, Segment, Svg, SPARK, colorOf, dur, hm, initials } from '../components/kit';
+import { C, Empty, Head, I, ProPage, usePro, Segment, Svg, SPARK, colorOf, dur, hm, initials } from '../components/kit';
 import { memberIndex, type Member } from '../lib/data';
 import { addDays, isoDate, startOfDay } from '../lib/format';
 import { driveMin, km, loadMaps, miles, optimize, pt, type Pt } from '../lib/route';
@@ -57,6 +57,12 @@ function best(origin: Pt | null, stops: Stop[], leave: number) {
 }
 
 export default function RoutesScreen() {
+  const { t } = useApp();
+  const pro = usePro();
+  return pro ? <RoutesPro /> : <ProPage title={t('ro.title')} text={t('pro.routes')} back="/app/agenda" />;
+}
+
+function RoutesPro() {
   const { t, lang, company, toast, tErr } = useApp();
   const nav = useNavigate();
   const [params, setParams] = useSearchParams();

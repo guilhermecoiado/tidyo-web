@@ -4,7 +4,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useApp } from '../lib/session';
 import { Confirm, Sheet } from '../components/ui';
-import { C, OwnerBar, Svg, I, colorOf, initials, hm, shortName, usd } from '../components/kit';
+import { C, OwnerBar, ProNote, usePro, Svg, I, colorOf, initials, hm, shortName, usd } from '../components/kit';
 import { archiveClient, getClients, getMembers, type Client, type Member } from '../lib/data';
 import { addDays, randomToken, sha256Hex } from '../lib/format';
 import { LANG_LABEL, type Lang } from '../lib/i18n';
@@ -125,6 +125,7 @@ type Visit = { id: string; scheduled_start: string; started_at: string | null; c
 export function ClientSheet({ client, color, profit, onClose, onChanged }: { client: Client; color: string; profit?: Profit; onClose: () => void; onChanged: () => void }) {
   const { t, tErr, lang, company, toast } = useApp();
   const nav = useNavigate();
+  const pro = usePro();
   const [visits, setVisits] = useState<Visit[] | null>(null);
   const [members, setMembers] = useState<Member[]>([]);
   const [portalLink, setPortalLink] = useState('');
@@ -246,7 +247,7 @@ export function ClientSheet({ client, color, profit, onClose, onChanged }: { cli
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
         <span className="k-sec"><span>{t('cl.portal')}</span></span>
-        {client.portal_user_id ? <span className="k-okbar" style={{ minHeight: 44 }}>{t('pt.connected')}</span> : !portalLink ? (
+        {client.portal_user_id ? <span className="k-okbar" style={{ minHeight: 44 }}>{t('pt.connected')}</span> : !pro ? <ProNote text={t('pro.portal')} /> : !portalLink ? (
           <button className="k-btn k-btn-line" onClick={invitePortal}>{t('pt.invite')}</button>
         ) : (
           <>

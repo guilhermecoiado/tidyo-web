@@ -4,7 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useApp } from '../lib/session';
 import { Sheet } from '../components/ui';
-import { Avatar, BELL, C, Empty, Fab, I, LogoMark, OwnerBar, Pill, SheetActions, SPARK, Svg, colorOf, compactMoney, dur, hm, jobTone, shortName, usd } from '../components/kit';
+import { Avatar, BELL, C, ProNote, usePro, Empty, Fab, I, LogoMark, OwnerBar, Pill, SheetActions, SPARK, Svg, colorOf, compactMoney, dur, hm, jobTone, shortName, usd } from '../components/kit';
 import { findConflicts, getClients, getInvoices, getJobs, getMembers, getServices, getUnbilled, isOverdue, jobMinutes, memberIndex, type Client, type Invoice, type Job, type Member } from '../lib/data';
 import { addDays, startOfDay } from '../lib/format';
 import { healthOf, healthReady, loadFinance, marginOf } from '../lib/finance';
@@ -36,8 +36,10 @@ const dateLine = (lang: string) => {
 };
 
 /** Dark Tidy sheet, as in the canvas */
-export function TidySheet({ title, sub, items, onClose }: { title: string; sub: string; items: Insight[]; onClose: () => void }) {
+export function TidySheet({ title, sub, items: all, onClose }: { title: string; sub: string; items: Insight[]; onClose: () => void }) {
   const { t } = useApp();
+  const pro = usePro();
+  const items = pro ? all : all.slice(0, 3);
   return (
     <Sheet title={title} onClose={onClose} dark>
       <span style={{ fontSize: 12, color: C.faint, marginTop: -10 }}>{sub}</span>
@@ -53,6 +55,7 @@ export function TidySheet({ title, sub, items, onClose }: { title: string; sub: 
           </div>
         );
       })}
+      {!pro && all.length > 3 && <ProNote dark text={t('pro.tidy', { n: all.length - 3 })} />}
     </Sheet>
   );
 }

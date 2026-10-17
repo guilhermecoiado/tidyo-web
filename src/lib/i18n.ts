@@ -1958,6 +1958,14 @@ const D: Dict = {
   'home.trialSoon.one': ["Seu teste grátis acaba amanhã.", "Your free trial ends tomorrow.", "Tu prueba gratis termina mañana."],
   'home.trialToday': ["Seu teste grátis acaba hoje.", "Your free trial ends today.", "Tu prueba gratis termina hoy."],
   'home.trialTalk': ["Ativar plano", "Activate plan", "Activar plan"],
+  'pro.only': ["Disponível no Pro", "Available on Pro", "Disponible en Pro"],
+  'pro.see': ["Ver planos", "See plans", "Ver planes"],
+  'pro.routes': ["Rotas otimizadas por helper, com saída de casa ou da empresa e abertura direta no Maps ou Waze.", "Optimized routes per helper, starting from home or the office, opening straight in Maps or Waze.", "Rutas optimizadas por helper, saliendo de casa o de la empresa, abiertas directo en Maps o Waze."],
+  'pro.portal': ["Portal do cliente: fotos do serviço, avaliações, faturas e pedidos num link só.", "Client portal: job photos, ratings, invoices and requests in one link.", "Portal del cliente: fotos del servicio, evaluaciones, facturas y pedidos en un solo link."],
+  'pro.export': ["Exportação para QuickBooks, Xero e Excel.", "Export to QuickBooks, Xero and Excel.", "Exportación a QuickBooks, Xero y Excel."],
+  'pro.teamPay': ["Exportar a folha da equipe e o relatório 1099.", "Export team payroll and the 1099 report.", "Exportar la nómina del equipo y el reporte 1099."],
+  'pro.tidy': ["Mais {n} sugestões do Tidy na revisão completa.", "{n} more Tidy suggestions in the full review.", "{n} sugerencias más de Tidy en la revisión completa."],
+  'pro.tidy.one': ["Mais 1 sugestão do Tidy na revisão completa.", "1 more Tidy suggestion in the full review.", "1 sugerencia más de Tidy en la revisión completa."],
 };
 
 const idx: Record<Lang, number> = { 'pt-BR': 0, en: 1, es: 2 };
