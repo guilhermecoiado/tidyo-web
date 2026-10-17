@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
+import { translate, type Lang } from '../lib/i18n';
+import { shareFile } from '../lib/invoicePdf';
 import { supabase } from '../lib/supabase';
 import { useApp } from '../lib/session';
 import { DateField, Select, TimeField } from '../components/pickers';
@@ -10,7 +12,7 @@ import { addDays, isoDate, startOfDay, toCents } from '../lib/format';
 
 export type Contract = {
   id: string; client_id: string; property_id: string; status: string; monthly_value_cents: number; hours_per_week: number | null;
-  starts_on: string | null; renews_on: string | null; last_adjusted_on: string | null; geofence_radius_m: number; walkthrough?: { weekdays?: number[]; after?: string } | null;
+  starts_on: string | null; renews_on: string | null; last_adjusted_on: string | null; geofence_radius_m: number; walkthrough?: { weekdays?: number[]; after?: string; sqft?: number; rooms?: number; baths?: number; per_visit_cents?: number } | null;
   clients: { name: string } | null; properties: { address_line1: string; city: string } | null;
 };
 type Inspection = { id: string; score: number | null; items: { area: string; ok: boolean; note?: string }[]; shared_with_client: boolean; inspected_at: string };
@@ -180,6 +182,16 @@ function ContractDetail({ contract, onClose, onChanged }: { contract: Contract; 
     const { error } = await supabase.from('contracts').update({ status }).eq('id', contract.id);
     if (error) toast(tErr(error.message)); else { toast(t('c.saved')); onChanged(); }
   };
+  const sendProposal = async () => {
+    if (!company) return;
+    const { data: cl } = await supabase.from('clients').select('name, language').eq('id', contract.client_id).maybeSingle();
+    const L = ((cl as { language?: string } | null)?.language || 'en') as Lang;
+    const { proposalPdf } = await import('../lib/proposalPdf');
+    const blob = await proposalPdf({ company: { name: company.name }, client: { name: (cl as { name?: string } | null)?.name || contract.clients?.name || '' },
+      address: contract.properties ? `${contract.properties.address_line1}, ${contract.properties.city}` : null, monthly_cents: contract.monthly_value_cents,
+      hours_per_week: contract.hours_per_week, starts_on: contract.starts_on, renews_on: contract.renews_on, walkthrough: contract.walkthrough as never, lang: L });
+    await shareFile(blob, `${translate(L, 'pp.file')}-${(contract.clients?.name || 'client').toLowerCase().replace(/[^a-z0-9]+/g, '-')}.pdf`, translate(L, 'pp.shareText', { company: company.name }));
+  };
   const saveAdjust = async () => {
     const { error } = await supabase.from('contracts').update({ monthly_value_cents: toCents(newValue), last_adjusted_on: isoDate(new Date()) }).eq('id', contract.id);
     if (error) toast(tErr(error.message)); else { toast(t('c.saved')); onChanged(); }
@@ -213,6 +225,7 @@ function ContractDetail({ contract, onClose, onChanged }: { contract: Contract; 
           </div>
         </section>
       )}
+      {contract.status === 'proposal' && <button className="k-btn k-btn-line" onClick={sendProposal}>{t('pp.send')}</button>}
       <div className="k-pair">
         <button className="k-btn k-btn-line" onClick={() => setAdjust(true)}>{t('ct.adjust')}</button>
         {contract.status === 'proposal' && <button className="k-btn k-btn-fill" onClick={() => setStatus('active')}>{t('ct.activate')}</button>}

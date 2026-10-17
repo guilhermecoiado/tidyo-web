@@ -16,7 +16,7 @@ type PJob = { id: string; status: string; scheduled_start: string; scheduled_end
 type PInv = { id: string; number: string; status: string; issued_on: string | null; due_on: string | null; total_cents: number; paid_cents: number };
 type PCo = { company_id: string; name: string; logo_path: string | null; phone: string | null; payment_info: PaymentInfo };
 type Req = { id: string; kind: string; body: string; status: string; created_at: string };
-type Contract = { id: string; status: string; monthly_value_cents: number; hours_per_week: number | null; starts_on: string | null; renews_on: string | null; walkthrough: { weekdays?: number[]; after?: string; sqft?: number; rooms?: number; baths?: number; floors?: string[]; per_visit_cents?: number } };
+type Contract = { id: string; status: string; monthly_value_cents: number; hours_per_week: number | null; starts_on: string | null; renews_on: string | null; walkthrough: { weekdays?: number[]; after?: string; sqft?: number; rooms?: number; baths?: number; floors?: string[]; per_visit_cents?: number }; properties?: { address_line1: string; city: string } | null };
 type Visit = { started_at: string | null; completed_at: string | null; team: string[] };
 
 const canRate = (j: PJob) => j.status === 'completed' && j.rating_status === 'pending' && !!j.rating_due_at && new Date(j.rating_due_at) > new Date();
@@ -33,6 +33,8 @@ export default function Portal() {
   const [reqs, setReqs] = useState<Req[]>([]);
   const [contract, setContract] = useState<Contract | null>(null);
   const [req, setReq] = useState(false);
+  const [askAccept, setAskAccept] = useState(false);
+  const [accepting, setAccepting] = useState(false);
   const [open, setOpen] = useState<PJob | null>(null);
   const [past, setPast] = useState(false);
   const [askOut, setAskOut] = useState(false);
@@ -44,14 +46,14 @@ export default function Portal() {
       supabase.rpc('portal_company'),
       supabase.rpc('portal_me'),
       supabase.from('client_requests').select('id, kind, body, status, created_at').order('created_at', { ascending: false }).limit(30),
-      supabase.from('contracts').select('id, status, monthly_value_cents, hours_per_week, starts_on, renews_on, walkthrough').in('status', ['active', 'proposal']).order('created_at', { ascending: false }).limit(1),
+      supabase.from('contracts').select('id, status, monthly_value_cents, hours_per_week, starts_on, renews_on, walkthrough, properties(address_line1, city)').in('status', ['active', 'proposal']).order('created_at', { ascending: false }).limit(1),
     ]);
     setJobs((j || []) as PJob[]);
     setInvoices((inv || []) as PInv[]);
     setCo(((c || []) as PCo[])[0] || null);
     setMe(((m || []) as { contact_name: string | null; email: string | null }[])[0] || null);
     setReqs((r || []) as Req[]);
-    setContract(((k || []) as Contract[])[0] || null);
+    setContract(((k || []) as unknown as Contract[])[0] || null);
   }, []);
   useEffect(() => { load(); }, [load]);
 
@@ -84,6 +86,20 @@ export default function Portal() {
   const mins = (j: PJob) => Math.round((+new Date(j.scheduled_end) - +new Date(j.scheduled_start)) / 60000);
   const about = (m: number) => { const h = Math.floor(m / 60), r = m % 60; return h ? `${h}h${r ? String(r).padStart(2, '0') : ''}` : `${r} min`; };
 
+  const downloadProposal = async () => {
+    if (!contract) return;
+    const { proposalPdf } = await import('../lib/proposalPdf');
+    const blob = await proposalPdf({ company: { name: co?.name || portal?.company_name || '' }, client: { name: portal?.name || '' }, address: contract.properties ? `${contract.properties.address_line1}, ${contract.properties.city}` : null,
+      monthly_cents: contract.monthly_value_cents, hours_per_week: contract.hours_per_week, starts_on: contract.starts_on, renews_on: contract.renews_on, walkthrough: contract.walkthrough, lang: lang as Lang });
+    await shareFile(blob, `${t('pp.file')}-${(co?.name || 'tidyo').toLowerCase().replace(/[^a-z0-9]+/g, '-')}.pdf`, t('pp.shareText', { company: co?.name || '' }));
+  };
+  const accept = async () => {
+    if (!contract) return;
+    setAskAccept(false); setAccepting(true);
+    const { error } = await supabase.rpc('accept_proposal', { p_contract: contract.id });
+    setAccepting(false);
+    if (error) toast(tErr(error.message)); else { toast(t('po.accepted')); load(); }
+  };
   const tabs: [typeof tab, string][] = [['visits', t('po.visits')], ['invoices', t('po.invoices')], ...(contract ? [['contract', t('po.contract')] as [typeof tab, string]] : []), ['requests', t('po.requests')]];
 
   return (
@@ -168,6 +184,12 @@ export default function Portal() {
             })()}
           </div>
         )}
+        {tab === 'contract' && contract && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {contract.status === 'proposal' && <button onClick={() => setAskAccept(true)} disabled={accepting} style={{ minHeight: 50, borderRadius: 14, border: 0, background: NAVY, color: '#FFFFFF', fontWeight: 800, fontSize: 15, cursor: 'pointer', fontFamily: 'inherit' }}>{t('po.acceptBtn')}</button>}
+            <button onClick={downloadProposal} style={{ minHeight: 46, borderRadius: 14, border: `1px solid ${C.line}`, background: '#FFFFFF', color: C.ink, fontWeight: 800, fontSize: 14, cursor: 'pointer', fontFamily: 'inherit' }}>{t('po.proposalPdf')}</button>
+          </div>
+        )}
 
         {tab === 'requests' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -194,6 +216,7 @@ export default function Portal() {
         </div>
       </main>
 
+      {askAccept && contract && <Confirm text={t('po.acceptAsk', { v: usd(contract.monthly_value_cents) })} confirmLabel={t('po.acceptBtn')} onCancel={() => setAskAccept(false)} onConfirm={accept} />}
       {req && portal && session && <RequestSheet company={company} onClose={() => setReq(false)} onSent={() => { setReq(false); setTab('requests'); load(); }} />}
       {open && <VisitSheet job={open} onClose={() => setOpen(null)} onRated={() => { setOpen(null); load(); }} />}
       {past && (

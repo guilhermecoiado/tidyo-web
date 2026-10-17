@@ -12,7 +12,7 @@ const money = (c: number) => `$${(c / 100).toLocaleString('en-US', { minimumFrac
 const LOGO_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 64 64"><rect width="64" height="64" rx="17" fill="#D4F1E9"/><g transform="translate(11 8.5) scale(0.7)"><rect x="12" y="9.5" width="36" height="4" rx="2" fill="#12A38F"/><rect x="10" y="12.5" width="40" height="10" rx="5" fill="#0A3D35"/><path d="M30 20 V 44 C 30 51.5, 34 55, 41.5 54" fill="none" stroke="#0A3D35" stroke-width="7" stroke-linecap="round"/></g></svg>`;
 
 /** The Tidyo mark as a PNG data URL (null where canvas is unavailable) */
-async function logoPng(): Promise<string | null> {
+export async function logoPng(): Promise<string | null> {
   try {
     const img = new Image();
     img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(LOGO_SVG);
